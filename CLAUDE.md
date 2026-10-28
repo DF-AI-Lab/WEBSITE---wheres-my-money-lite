@@ -12,3 +12,6 @@ This repo = the website that shows off the Lite app. The app itself lives in DF-
 - Check every page at 1280 and 390 wide (Playwright): no sideways scroll, no script errors.
 - 28 Oct v1: built from the 5 mocks + Darren's notes (hand on Wake + Play, Tour phone scrolls with a thumb print, Month tighter).
   The hand is a drawn SVG for now; a Higgsfield / real-looking one later.
+- NEXT (agreed 28 Oct): Higgsfield + motion = a CONCEPT LAB first. 1) Darren connects the Higgsfield connector. 2) Make 3-4 hand/phone
+  concepts side by side on one test page (lab/), real hand loops as webm/mp4 + poster. 3) Measure each: file size, load time, looks at
+  390 + 1280, smooth loop, reduced motion. 4) Darren picks; only the winner goes into the real pages (drawn SVG hand stays as fallback).

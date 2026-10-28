@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Everything · Where's My Money? Lite</title>
+<meta name="description" content="Where's My Money? Lite: see what's spare, payday to payday. No bank login, your money stays on your phone.">
+<link rel="icon" href="lite-192.png">
+<meta name="theme-color" content="#0f1513">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one column site. Hero = words left + the real Lite app in a phone right (the app is the hero).
+   Then "a month in Lite" (drag through the days), then three small try-it parts (lock, Drive, bell). Dark first, like Darren's phone. */
+:root {
+  /* the app's own tokens (docs/demo/look.css + lite.css), dark values first */
+  --bg: #0f1513; --card: #171f1c; --text: #e9f0ed; --muted: #93a39d; --border: #26332f; --row: #1d2724;
+  --accent: #3fd0a4; --on-accent: #06221b; --good: #3fd0a4; --bad: #f07a6a;
+  --bill: #7fb0ff; --spend: #f2b632; --on-spend: #241a00; --pot: #f59a4a; --on-pot: #1f0e00; --spare: #3fd0a4; --ring-bg: #26332f;
+  --zused: #e06cd8; --zfree: #6b5a9e; --zfreetext: #a99ad6; --on-z: #2a0627;
+  --phone: #050807; --glow: rgba(63,208,164,.13); --tip: #e9f0ed; --on-tip: #0f1513;
+  --display: "Bricolage Grotesque", "Manrope", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.2,.8,.2,1);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f3f5f4; --card: #ffffff; --text: #14201c; --muted: #5d6b66; --border: #dde3e0; --row: #eef2f0;
+  --accent: #0f6e5c; --on-accent: #ffffff; --good: #138a5e; --bad: #c8463a;
+  --bill: #2f6fd0; --spend: #b07d00; --on-spend: #ffffff; --pot: #e0701b; --on-pot: #1f0e00; --spare: #13a07a; --ring-bg: #dde3e0;
+  --zused: #b53aab; --zfree: #c3b6ea; --zfreetext: #6b5a9e; --on-z: #ffffff;
+  --phone: #14201c; --glow: rgba(15,110,92,.14); --tip: #14201c; --on-tip: #ffffff;
+  color-scheme: light } }
+:root[data-theme="light"] {
+  --bg: #f3f5f4; --card: #ffffff; --text: #14201c; --muted: #5d6b66; --border: #dde3e0; --row: #eef2f0;
+  --accent: #0f6e5c; --on-accent: #ffffff; --good: #138a5e; --bad: #c8463a;
+  --bill: #2f6fd0; --spend: #b07d00; --on-spend: #ffffff; --pot: #e0701b; --on-pot: #1f0e00; --spare: #13a07a; --ring-bg: #dde3e0;
+  --zused: #b53aab; --zfree: #c3b6ea; --zfreetext: #6b5a9e; --on-z: #ffffff;
+  --phone: #14201c; --glow: rgba(15,110,92,.14); --tip: #14201c; --on-tip: #ffffff;
+  color-scheme: light }
+
+* { box-sizing: border-box; }
+html { overflow-x: clip; }
+body { background: var(--bg); color: var(--text); font: 16px/1.55 var(--body); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1140px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -.02em; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex: none; }
+.dot.bill { background: var(--bill); } .dot.pot { background: var(--pot); } .dot.spend { background: var(--spend); } .dot.spare { background: var(--spare); }
+.dot.zused { background: var(--zused); } .dot.zfree { background: var(--zfree); }
+
+/* site header */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid transparent; transition: border-color .3s; }
+header.top.scrolled { border-bottom-color: var(--border); }
+header.top .wrap { display: flex; align-items: center; gap: 12px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; font-weight: 800; }
+.brand img { width: 34px; height: 34px; border-radius: 9px; transition: transform .6s var(--ease); }
+.brand:hover img { transform: rotate(-10deg) scale(1.06); }
+.nav { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.nav a { color: var(--text); text-decoration: none; font-weight: 700; font-size: 14px; padding: 8px 12px; border-radius: 10px; }
+.nav a.go { background: var(--accent); color: var(--on-accent); }
+.nav a:not(.go):hover { background: var(--row); }
+
+/* hero */
+.hero { display: grid; grid-template-columns: 1fr 400px; gap: 56px; align-items: center; padding-block: 36px 80px; }
+.hero h1 { font-size: clamp(44px, 6.6vw, 84px); line-height: .96; font-weight: 800; }
+.hero h1 span { display: block; color: var(--accent); }
+.lede { font-size: 19px; color: var(--muted); max-width: 31em; margin: 22px 0 30px; }
+.ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { border: 0; border-radius: 14px; padding: 14px 20px; font-weight: 800; background: var(--accent); color: var(--on-accent); text-decoration: none; display: inline-block;
+  transition: transform .15s var(--ease); box-shadow: 0 8px 22px var(--glow); }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn.ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); box-shadow: none; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 36px; max-width: 560px; }
+.facts div { font-size: 14px; color: var(--muted); }
+.facts b { display: block; color: var(--text); font-size: 15px; }
+
+/* the phone */
+.stage { position: relative; display: grid; justify-items: center; }
+.stage::before { content: ""; position: absolute; top: 8%; width: 100%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, var(--glow), transparent 66%); }
+.phone { position: relative; width: 380px; max-width: 100%; background: var(--phone); border-radius: 50px; padding: 11px; box-shadow: 0 40px 80px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.06); }
+.screen { position: relative; background: var(--bg); border-radius: 40px; overflow: hidden; height: 720px; display: flex; flex-direction: column; }
+.island { height: 30px; display: grid; place-items: center; flex: none; }
+.island i { width: 96px; height: 26px; border-radius: 99px; background: var(--phone); }
+.scroll { overflow-y: auto; overflow-x: hidden; flex: 1; padding: 4px 12px 22px; scrollbar-width: none; scroll-behavior: smooth; }
+.scroll::-webkit-scrollbar { display: none; }
+.ahead { display: flex; gap: 10px; align-items: flex-start; padding: 6px 2px 10px; }
+.ahead img { width: 44px; height: 44px; border-radius: 11px; }
+.ahead .nm { font: 800 19px/1.15 var(--body); letter-spacing: -.01em; }
+.ahead .tg { font-size: 12px; font-weight: 700; color: var(--accent); }
+.aside { margin-left: auto; display: grid; justify-items: end; gap: 6px; }
+.setbtn { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 6px 10px; font-size: 12px; font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.vrow { display: flex; gap: 6px; align-items: center; }
+.bell { position: relative; width: 30px; height: 28px; border: 1px solid var(--border); background: var(--card); border-radius: 9px; display: grid; place-items: center; color: var(--spend); }
+.bell b { position: absolute; top: -7px; right: -7px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--bad); color: #fff; font-size: 10px; line-height: 17px; text-align: center; transition: transform .3s var(--ease); }
+.bell b.bump { animation: bump .45s var(--ease); }
+@keyframes bump { 40% { transform: scale(1.4); } }
+.appver { font-size: 11px; color: var(--muted); }
+.tab { display: flex; justify-content: center; border-top: 1px solid var(--border); margin: 0 2px 10px; }
+.tab button { margin-top: -1px; border: 1px solid var(--border); border-top: 0; background: var(--bg); border-radius: 0 0 10px 10px; padding: 1px 12px 3px; color: var(--muted); line-height: 0; }
+.tab svg { transition: transform .3s var(--ease); }
+.tab button[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+.c { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+.lbl { font-size: 11px; font-weight: 800; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 4px; }
+.info { all: unset; cursor: pointer; font-size: 13px; color: var(--muted); padding: 0 2px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.info:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
+.sthead { display: flex; justify-content: space-between; gap: 10px; }
+.big { font: 800 40px/1.05 var(--body); letter-spacing: -.02em; color: var(--accent); margin: 4px 0 6px; transition: color .3s; }
+.big.low { color: var(--bad); }
+.key { font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0 6px; }
+.key span { white-space: nowrap; display: inline-flex; align-items: center; }
+.key .dot { width: 7px; height: 7px; margin-right: 4px; }
+.ring { width: 96px; height: 96px; flex: none; }
+.ring circle { fill: none; stroke-width: 10; transition: stroke-dasharray .9s var(--ease), stroke-dashoffset .9s var(--ease); }
+.ring .bg { stroke: var(--ring-bg); } .ring .sb { stroke: var(--bill); } .ring .sp { stroke: var(--pot); } .ring .ss { stroke: var(--spend); } .ring .sf { stroke: var(--spare); }
+.ring text { fill: var(--text); font: 800 19px var(--body); }
+.strows { margin-top: 14px; font-size: 14px; }
+.strows .r { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-top: 1px dashed var(--border); color: var(--muted); }
+.strows .r span:first-child { display: inline-flex; align-items: center; white-space: nowrap; }
+.strows .r .v { color: var(--text); font-weight: 700; }
+.strows .r.tot { color: var(--text); font-weight: 800; border-top: 0; }
+.strows .r.line { border-top: 2px solid var(--text); padding: 0; margin-top: 6px; }
+.strows .k-bill { color: var(--bill); } .strows .k-spend { color: var(--spend); } .strows .k-pot { color: var(--pot); }
+.ulink { all: unset; cursor: pointer; color: var(--text); font-weight: 700; border-bottom: 2px dotted var(--muted); }
+.ulink:focus-visible { outline: 2px solid var(--accent); }
+
+.zc { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.zc .zrow { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); margin-top: 8px; }
+.zc .zrow b { color: var(--text); margin-left: 10px; }
+.zc .zrow b.free { color: var(--zfreetext); }
+.zc small { font-size: 11px; color: var(--muted); display: block; margin-top: 8px; }
+.zring { width: 92px; height: 92px; flex: none; }
+.zring circle { fill: none; stroke-width: 9; }
+.zring .zf { stroke: var(--zfree); } .zring .zu { stroke: var(--zused); transition: stroke-dasharray .6s var(--ease); }
+.zring text { fill: var(--text); font: 800 19px var(--body); } .zring text.s { font: 600 9px var(--body); fill: var(--muted); }
+
+/* folding cards */
+.fold > .fh { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 0; cursor: pointer; font: 800 18px var(--body); }
+.fold > .fh:focus-visible { outline: 2px solid var(--accent); border-radius: 8px; }
+.fold > .fh .chev { margin-left: auto; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--muted); border: 1.5px solid transparent; transition: border-color .2s; }
+.fold.open > .fh .chev { border-color: var(--text); color: var(--text); }
+.fold > .fh .chev svg { transition: transform .3s var(--ease); }
+.fold.open > .fh .chev svg { transform: rotate(90deg); }
+.fold[data-k="spend"] > .fh { color: var(--spend); } .fold[data-k="pots"] > .fh { color: var(--pot); }
+.fold[data-k="card"] > .fh { color: var(--zused); } .fold[data-k="bills"] > .fh { color: var(--bill); }
+.fold[data-k="spend"] .fh .dot { background: var(--spend); } .fold[data-k="pots"] .fh .dot { background: var(--pot); }
+.fold[data-k="card"] .fh .dot { background: var(--zused); } .fold[data-k="bills"] .fh .dot { background: var(--bill); }
+.fb { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .4s var(--ease); }
+.fold.open .fb { grid-template-rows: 1fr; }
+.fb > div { overflow: hidden; min-height: 0; }
+.fb > div > .in { padding-top: 14px; }
+
+.seg { display: inline-flex; background: var(--row); border-radius: 99px; padding: 4px; border: 1px solid var(--border); }
+.seg button { border: 0; background: none; border-radius: 99px; padding: 5px 11px; font-size: 13px; font-weight: 700; color: var(--muted); transition: background .25s, color .25s; }
+.seg button.on { background: var(--spend); color: var(--on-spend); }
+.seg.k button.on { background: var(--row); color: var(--text); }
+.seg.k { background: var(--bg); }
+.seg.k button.on { background: var(--spend); color: var(--on-spend); }
+.addform { display: grid; grid-template-columns: 30% 1fr auto; gap: 8px; margin: 12px 0; }
+.addform input { min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; font-size: 15px; }
+.addform input::placeholder { color: var(--muted); opacity: .7; }
+.addform button { border: 0; border-radius: 12px; padding: 0 16px; font-weight: 800; background: var(--spend); color: var(--on-spend); transition: transform .12s; }
+.addform button:active { transform: scale(.95); }
+.addform.pot button { background: var(--pot); color: var(--on-pot); }
+.addform.zz { grid-template-columns: 26% 1fr auto auto; }
+.addform.zz button { background: var(--zused); color: var(--on-z); padding: 0 13px; }
+.addform.zz button.off { background: var(--card); color: var(--text); border: 1px solid var(--border); font-size: 12px; padding: 0 9px; }
+.addform.bad input { border-color: var(--bad); animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.bar2 { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); font-weight: 700; padding-bottom: 8px; }
+.when { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.list .row { display: grid; grid-template-columns: 1fr auto 26px; gap: 0 10px; align-items: center; padding: 11px 0; border-top: 1px solid var(--border); animation: inrow .4s var(--ease); }
+.list .row .n { font-weight: 800; font-size: 15px; }
+.list .row .s { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.list .row .a { font-weight: 800; color: var(--spend); text-align: right; }
+.list .row.up .n, .list .row.up .a { font-style: italic; }
+.list .row .paidq { all: unset; cursor: pointer; display: block; font-size: 11px; font-weight: 800; color: var(--accent); text-align: right; font-style: normal; }
+.list .row.out { animation: outrow .3s var(--ease) forwards; }
+.list .grp { font-size: 11px; font-weight: 800; color: var(--muted); padding: 10px 0 2px; border-top: 1px solid var(--border); letter-spacing: .05em; text-transform: uppercase; }
+.more { all: unset; cursor: pointer; color: var(--muted); font-weight: 800; letter-spacing: 1px; text-align: center; border-radius: 6px; }
+.more:focus-visible { outline: 2px solid var(--accent); }
+.addcat { all: unset; cursor: pointer; color: var(--accent); font-weight: 800; border-bottom: 1.5px dashed var(--accent); }
+.catpick { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 2px; grid-column: 1 / -1; }
+.chip { border: 1px solid var(--border); background: var(--bg); border-radius: 99px; padding: 5px 10px; font-size: 12px; font-weight: 700; transition: transform .12s; }
+.chip:active { transform: scale(.94); }
+.sums { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; font-size: 14px; }
+.sums div { display: flex; justify-content: space-between; padding: 4px 0; color: var(--muted); }
+.sums div b { color: var(--text); }
+.sums div.it { font-style: italic; }
+.sums div.tt { color: var(--text); font-weight: 800; }
+.catv .cr { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 14px; animation: inrow .35s var(--ease); }
+.catv .cr b { font-weight: 800; }
+.catv .cr small { color: var(--muted); }
+.catv .cr .cb { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--row); overflow: hidden; }
+.catv .cr .cb i { display: block; height: 100%; background: var(--spend); border-radius: 99px; width: 0; transition: width .7s var(--ease); }
+
+div.pot { padding: 12px 0; border-top: 1px solid var(--border); animation: inrow .4s var(--ease); }
+.pot:first-child { border-top: 0; padding-top: 0; }
+.pot .ph { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pot .ph b { font-size: 15px; }
+.pot .ph .l { margin-left: auto; color: var(--accent); font-weight: 800; }
+.pot .ph .l.over { color: var(--bad); }
+.pbar { height: 8px; background: var(--row); border-radius: 99px; margin: 8px 0 6px; overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--pot); border-radius: 99px; transition: width .8s var(--ease), background .3s; }
+.pot.over .pbar i { background: var(--bad); }
+.pot small { color: var(--muted); font-size: 12px; }
+.setamt { width: 80px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
+.note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+.ccrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); animation: inrow .4s var(--ease); }
+.ccrow .a { color: var(--zused); font-weight: 800; margin-left: auto; }
+.ccrow.pay .a { color: var(--accent); }
+.ccrow .x { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg); }
+.ccrow small { color: var(--muted); display: block; font-size: 12px; }
+.cclim { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding-top: 12px; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted); }
+.cclim .free { color: var(--text); font-weight: 800; }
+.cclim .free + b { color: var(--zfreetext); text-align: right; }
+
+.bl { border-top: 1px solid var(--border); }
+.bl > button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 1fr auto; padding: 10px 0; }
+.bl > button:focus-visible { outline: 2px solid var(--accent); }
+.bl .n { font-weight: 800; font-size: 14px; }
+.bl .n i { font-style: normal; color: var(--muted); font-weight: 600; font-size: 13px; }
+.bl .s { font-size: 12px; color: var(--muted); }
+.bl .a { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-weight: 800; }
+.bl.paid .n, .bl.paid .n i { color: var(--good); }
+.bl.paid .n::before { content: "✓ "; }
+.bl.paused .n, .bl.paused .a { text-decoration: line-through; opacity: .45; }
+.bl .bx { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s var(--ease); }
+.bl.open .bx { grid-template-rows: 1fr; }
+.bl .bx > div { overflow: hidden; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 50px; }
+.bars span { flex: 1; height: 0; border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--bill) 35%, transparent); transition: height .55s var(--ease); }
+.bars span:last-child { background: var(--bill); }
+.bmon { display: flex; gap: 6px; font-size: 10px; color: var(--muted); }
+.bmon span { flex: 1; text-align: center; }
+.bact { display: flex; gap: 6px; padding: 8px 0 12px; }
+
+/* sheet (Start a new month?) inside the phone */
+.sheetback { position: absolute; inset: 0; background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 5; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--card); border-radius: 22px 22px 0 0; padding: 20px 18px 24px; transform: translateY(105%); transition: transform .4s var(--ease); z-index: 6; border-top: 1px solid var(--border); }
+.screen.sheeton .sheetback { opacity: 1; pointer-events: auto; }
+.screen.sheeton .sheet { transform: none; }
+.sheet h3 { font: 800 20px var(--body); margin-bottom: 4px; }
+.sheet p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+.sheet label { display: grid; gap: 4px; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+.sheet input { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; font-size: 16px; }
+.sheet .bb { display: grid; gap: 8px; margin-top: 6px; }
+.sheet .bb button { border: 0; border-radius: 12px; padding: 12px; font-weight: 800; background: var(--row); }
+.sheet .bb .pri { background: var(--accent); color: var(--on-accent); }
+.sheet .bb .ter { background: none; color: var(--muted); }
+.menu { position: absolute; top: 76px; right: 12px; width: 250px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 8px; z-index: 7; box-shadow: 0 18px 40px rgba(0,0,0,.35);
+  transform-origin: top right; transform: scale(.92); opacity: 0; pointer-events: none; transition: transform .25s var(--ease), opacity .2s; }
+.menu.on { transform: none; opacity: 1; pointer-events: auto; }
+.menu .mh { font-size: 11px; color: var(--muted); font-weight: 800; padding: 8px 8px 4px; letter-spacing: .05em; text-transform: uppercase; }
+.menu button.mi { all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; padding: 8px; border-radius: 10px; font-size: 14px; font-weight: 700; }
+.menu button.mi:hover, .menu button.mi:focus-visible { background: var(--row); }
+.menu .mi small { display: block; color: var(--muted); font-weight: 600; font-size: 12px; }
+.rem { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 9px 8px; border-radius: 10px; font-size: 13px; animation: inrow .3s var(--ease); }
+.rem + .rem { border-top: 1px solid var(--border); }
+.rem b { font-size: 14px; }
+.rem small { color: var(--muted); grid-column: 1; }
+.rem button { grid-row: 1 / span 2; grid-column: 2; width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg); color: var(--good); font-weight: 800; }
+.rem.out { animation: outrow .3s var(--ease) forwards; }
+.tipb { position: absolute; z-index: 9; max-width: 240px; background: var(--tip); color: var(--on-tip); font-size: 12px; line-height: 1.45; padding: 9px 11px; border-radius: 10px; box-shadow: 0 10px 26px rgba(0,0,0,.3); pointer-events: none;
+  opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s var(--ease); }
+.tipb.on { opacity: 1; transform: none; }
+.flash { position: absolute; inset: 0; display: grid; place-items: center; z-index: 8; pointer-events: none; opacity: 0; background: color-mix(in srgb, var(--accent) 94%, transparent); color: var(--on-accent); text-align: center; }
+.flash b { display: block; font: 800 44px var(--display); letter-spacing: -.02em; }
+.flash.go { animation: flash 1.7s var(--ease); }
+@keyframes flash { 0% { opacity: 0; } 14%, 58% { opacity: 1; } 100% { opacity: 0; } }
+.flash.go b { animation: pop 1.7s var(--ease); }
+@keyframes pop { 0% { transform: scale(.7); } 22% { transform: scale(1.05); } 34% { transform: none; } }
+.pulse { animation: pulse 1.6s var(--ease); border-radius: 12px; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 30% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent); } }
+@keyframes inrow { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes outrow { to { opacity: 0; transform: translateX(26px); } }
+.hint { position: relative; margin-top: 18px; font-size: 13px; color: var(--muted); text-align: center; max-width: 340px; }
+
+/* site sections */
+section.band { padding-block: 84px; border-top: 1px solid var(--border); }
+.sh { display: grid; gap: 12px; max-width: 38em; margin-bottom: 40px; }
+.sh h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.02; font-weight: 800; }
+.sh p { color: var(--muted); margin: 0; font-size: 17px; }
+
+/* a month in Lite */
+.month { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 26px; display: grid; gap: 22px; }
+.mtop { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
+.mday { font: 800 34px/1 var(--display); }
+.mday small { display: block; font: 600 14px var(--body); color: var(--muted); margin-top: 6px; }
+.mstats { display: flex; gap: 26px; flex-wrap: wrap; }
+.mstats div { font-size: 13px; color: var(--muted); }
+.mstats b { display: block; font-size: 22px; color: var(--text); font-weight: 800; }
+.mstats .gb { color: var(--good); } .mstats .bb2 { color: var(--bill); }
+.track { position: relative; height: 92px; }
+.track .rail { position: absolute; left: 0; right: 0; top: 52px; height: 6px; border-radius: 99px; background: var(--row); }
+.track .fill { position: absolute; left: 0; top: 52px; height: 6px; border-radius: 99px; background: var(--accent); width: 0; }
+.mk { position: absolute; top: 0; transform: translateX(-50%); display: grid; justify-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.mk .pin { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--row); color: var(--bill); font-size: 12px; font-weight: 800; border: 2px solid var(--bill); transition: background .3s, color .3s, transform .3s var(--ease); }
+.mk.done .pin { background: var(--good); border-color: var(--good); color: var(--on-accent); transform: scale(1.08); }
+.mk.pay .pin { border-color: var(--accent); color: var(--accent); }
+.mk .stem { width: 2px; height: 10px; background: var(--border); }
+.mk.lo { top: 62px; }
+.mk.lo .stem { order: -1; }
+#dayslide { width: 100%; accent-color: var(--accent); }
+.mlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.mlist div { display: flex; justify-content: space-between; gap: 8px; padding: 9px 12px; background: var(--row); border-radius: 10px; font-size: 13px; transition: background .3s, color .3s; }
+.mlist div.done { background: color-mix(in srgb, var(--good) 16%, var(--row)); color: var(--good); font-weight: 700; }
+.mlist div.done span:first-child::before { content: "✓ "; }
+.mlbl { font-size: 13px; color: var(--muted); }
+
+/* try-it parts */
+.parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.part { background: var(--card); border: 1px solid var(--border); border-radius: 22px; padding: 24px; display: grid; gap: 14px; align-content: start; }
+.part h3 { font-size: 23px; }
+.part p { margin: 0; color: var(--muted); font-size: 15px; }
+.demo { min-height: 128px; display: grid; place-items: center; background: var(--bg); border-radius: 16px; padding: 18px; border: 1px solid var(--border); }
+.fpbtn { width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--row); color: var(--accent); position: relative; display: grid; place-items: center; touch-action: none; user-select: none; -webkit-user-select: none; transition: transform .2s var(--ease), background .3s, color .3s; }
+.fpbtn:active { transform: scale(.95); }
+.fpbtn .arc { position: absolute; inset: 0; transform: rotate(-90deg); }
+.fpbtn .arc circle { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 280; stroke-dashoffset: 280; }
+.fpbtn.ok { background: var(--accent); color: var(--on-accent); }
+.fpmsg { font-weight: 800; text-align: center; margin-top: 10px; min-height: 1.5em; }
+.cloudb { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 14px; background: var(--card); border: 1px solid var(--border); font-weight: 800; }
+.cloudb:focus-visible { outline: 3px solid var(--accent); }
+.cloud { width: 40px; height: 30px; }
+.cloud .cl { fill: none; stroke: var(--text); stroke-width: 2; }
+.cloud .tick { fill: none; stroke: var(--good); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 14; stroke-dashoffset: 14; }
+.cloud .arr { stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; fill: none; opacity: 0; }
+.cloud .wait { fill: var(--spend); opacity: 0; }
+.cloudb.saving .arr { opacity: 1; animation: rise 0.8s var(--ease) infinite; }
+.cloudb.saved .tick { stroke-dashoffset: 0; transition: stroke-dashoffset .45s var(--ease); }
+.cloudb.wait .wait { opacity: 1; }
+@keyframes rise { from { transform: translateY(4px); opacity: 0; } 50% { opacity: 1; } to { transform: translateY(-3px); opacity: 0; } }
+.cloudsub { font-size: 13px; color: var(--muted); text-align: center; margin-top: 10px; }
+.bdemo { width: 100%; }
+.bdemo .rem { background: var(--card); border: 1px solid var(--border); margin-bottom: 6px; }
+.bdemo .kids { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s var(--ease); grid-column: 1 / -1; }
+.bdemo .rem.open .kids { grid-template-rows: 1fr; }
+.bdemo .kids > div { overflow: hidden; font-size: 12px; color: var(--muted); }
+.bdemo .kids > div span { display: flex; justify-content: space-between; padding: 4px 0; }
+.bdemo .chevb { all: unset; cursor: pointer; }
+.bdemo .chevb svg { transition: transform .3s var(--ease); vertical-align: -3px; }
+.bdemo .rem.open .chevb svg { transform: rotate(90deg); }
+
+footer { padding-block: 40px 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+footer a { color: var(--text); }
+
+@media (max-width: 980px) {
+  .hero { grid-template-columns: 1fr; gap: 40px; padding-block: 24px 60px; }
+  .parts { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .nav a:not(.go) { display: none; }
+  .facts { grid-template-columns: 1fr; gap: 10px; }
+  .screen { height: 660px; }
+  .month { padding: 18px; }
+  .mk span.t { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+</style>
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-page="features">
+
+<main>
+  <div class="wrap hero" id="hero">
+    <div>
+      <h1>See what's spare. <span>Payday to payday.</span></h1>
+      <p class="lede">Type in your pay, your bills and what you spend. Lite works out what's really left until you're paid again, on your phone, with no bank login.</p>
+      <div class="ctas">
+        <button class="btn" id="go-month" type="button">Start a new month</button>
+        <a class="btn ghost" href="https://df-ai-lab.github.io/wheres-my-money-lite/demo/" target="_blank" rel="noopener">Open the demo</a>
+      </div>
+      <div class="facts">
+        <div><b>No bank login</b>You type it in. Nothing connects to your bank.</div>
+        <div><b>Stays on your phone</b>Saved in your browser, opened with your fingerprint.</div>
+        <div><b>Backed up</b>A copy in your own Google Drive.</div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="phone">
+        <div class="screen" id="screen">
+          <div class="island"><i></i></div>
+          <div class="scroll" id="scroll">
+            <div class="ahead">
+              <img src="lite-192.png" alt="">
+              <div><div class="nm">Where's My Money?</div><div class="tg">Payday to payday · Lite</div></div>
+              <div class="aside">
+                <button class="setbtn" id="setbtn" type="button" aria-haspopup="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Settings</button>
+                <div class="vrow">
+                  <button class="bell" id="bellbtn" type="button" aria-label="Reminders">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+                    <b id="bellnum">3</b></button>
+                  <span class="appver">demo.v0.59</span>
+                </div>
+              </div>
+            </div>
+            <div class="tab"><button type="button" id="tabbtn" aria-label="Start a new month" aria-expanded="false">
+              <svg width="14" height="10" viewBox="0 0 14 10"><path d="M2 7l5-4 5 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+
+            <div class="c" id="stcard">
+              <div class="sthead">
+                <div>
+                  <div class="lbl">Spare cash left <button class="info" type="button" data-tip="This is a guide. Check your bank app to confirm what's really left. Don't rely on this app alone.">ⓘ</button></div>
+                  <div class="big" id="big">£0.00</div>
+                  <div class="key" id="key"></div>
+                </div>
+                <svg class="ring" viewBox="0 0 100 100" role="img" aria-label="Where the money went">
+                  <circle cx="50" cy="50" r="40" class="bg"/>
+                  <circle cx="50" cy="50" r="40" class="sb" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" class="sp" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" class="ss" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" class="sf" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="57" text-anchor="middle" id="ringpc">0%</text>
+                </svg>
+              </div>
+              <div class="strows">
+                <div class="r"><span>Pay</span><button class="ulink" type="button" id="r-pay" data-sheet>£0.00</button></div>
+                <div class="r"><span>+ Left from last month</span><button class="ulink" type="button" id="r-left" data-sheet>Add</button></div>
+                <div class="r"><span><i class="dot bill"></i>− Bills</span><span class="v k-bill" id="r-bills"></span></div>
+                <div class="r"><span><i class="dot spend"></i>− Spends <button class="info" type="button" data-tip="Spends that are not in a pot. Pot spends come out of the pot, so they show in Pots left.">ⓘ</button></span><span class="v k-spend" id="r-spends"></span></div>
+                <div class="r"><span><i class="dot pot"></i><span id="potword">Pots left</span> <button class="info" type="button" data-tip="What your pots still have to spend this month. Over comes off spare.">ⓘ</button></span><span class="v k-pot" id="r-pots"></span></div>
+                <div class="r line"></div>
+                <div class="r tot"><span>Starting spare</span><span id="r-start"></span></div>
+                <div class="r tot"><span>Actual spare</span><span id="r-actual"></span></div>
+              </div>
+            </div>
+
+            <div class="c">
+              <div class="zc">
+                <div>
+                  <div class="lbl">Zopa credit card</div>
+                  <div class="zrow"><i class="dot zused"></i>Used<b id="z-used"></b></div>
+                  <div class="zrow"><i class="dot zfree"></i>Free<b class="free" id="z-free"></b></div>
+                  <small id="z-lim">Limit £500.00</small>
+                </div>
+                <svg class="zring" viewBox="0 0 100 100" role="img" aria-label="Credit card limit used">
+                  <circle cx="50" cy="50" r="40" class="zf"/>
+                  <circle cx="50" cy="50" r="40" class="zu" id="zu" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="54" text-anchor="middle" id="zpc">0%</text>
+                  <text x="50" y="68" text-anchor="middle" class="s">used</text>
+                </svg>
+              </div>
+            </div>
+
+            <div class="c fold open" data-k="spend" id="spendcard">
+              <button class="fh" type="button" aria-expanded="true"><i class="dot"></i>Add a spend<span class="chev"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></button>
+              <div class="fb"><div><div class="in">
+                <div class="when">
+                  <div class="seg" id="paidseg"><button type="button" class="on" data-v="paid">Paid</button><button type="button" data-v="up">Upcoming</button></div>
+                </div>
+                <form class="addform" id="spendform" autocomplete="off">
+                  <input id="samt" inputmode="decimal" placeholder="12.50" aria-label="Amount">
+                  <input id="sname" placeholder="Coffee" aria-label="What was it">
+                  <button type="submit">Add</button>
+                </form>
+                <div class="bar2"><span id="scount"></span>
+                  <div class="seg k" id="viewseg"><button type="button" class="on" data-v="all">All</button><button type="button" data-v="cat">Categories</button></div></div>
+                <div class="list" id="slist"></div>
+                <div class="catv" id="catv" hidden></div>
+                <div class="sums">
+                  <div><span>Money for spending</span><b id="s-mfs"></b></div>
+                  <div><span>Paid so far</span><b id="s-paid"></b></div>
+                  <div class="it"><span>Still to come</span><b id="s-come"></b></div>
+                  <div class="tt"><span>Left now</span><span id="s-left"></span></div>
+                </div>
+              </div></div></div>
+            </div>
+
+            <div class="c fold" data-k="pots" id="potcard">
+              <button class="fh" type="button" aria-expanded="false"><i class="dot"></i>Monthly pots<span class="chev"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></button>
+              <div class="fb"><div><div class="in">
+                <div id="pots"></div>
+                <form class="addform pot" id="potform" autocomplete="off">
+                  <input id="pamt" inputmode="decimal" placeholder="400" aria-label="Pot amount">
+                  <input id="pname" placeholder="New pot" aria-label="Pot name">
+                  <button type="submit">Add</button>
+                </form>
+                <div class="note">Spends and bills in a pot's category fill it. Over comes off spare.</div>
+              </div></div></div>
+            </div>
+
+            <div class="c fold" data-k="card" id="cccard">
+              <button class="fh" type="button" aria-expanded="false"><i class="dot"></i>Credit card<span class="chev"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></button>
+              <div class="fb"><div><div class="in">
+                <form class="addform zz" id="ccform" autocomplete="off">
+                  <input id="camt" inputmode="decimal" placeholder="40" aria-label="Amount">
+                  <input id="cname" placeholder="Shell" aria-label="What was it">
+                  <button type="submit">Add</button>
+                  <button type="button" class="off" id="ccoff">Paid off</button>
+                </form>
+                <div id="cclist"></div>
+                <div class="cclim"><span>Limit</span><span>£500.00</span><span class="free">Free</span><b id="cc-free"></b></div>
+              </div></div></div>
+            </div>
+
+            <div class="c fold" data-k="bills" id="billcard">
+              <button class="fh" type="button" aria-expanded="false"><i class="dot"></i>Bills<span class="chev"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></button>
+              <div class="fb"><div><div class="in" id="blist"></div></div></div>
+            </div>
+          </div>
+
+          <div class="menu" id="setmenu" role="menu">
+            <div class="mh">Account</div><button class="mi" type="button">Darren<small>Your name · Gmail</small></button>
+            <div class="mh">On this phone</div><button class="mi" type="button">Save a backup<small>A file on this phone</small></button>
+            <div class="mh">Cloud</div><button class="mi" type="button">Google Drive backup<small>● On · saved today</small></button>
+            <div class="mh">Lock</div><button class="mi" type="button">Fingerprint<small>● On for this phone</small></button>
+          </div>
+          <div class="menu" id="bellmenu" role="menu"><div class="mh">Reminders</div><div id="rems"></div></div>
+          <div class="sheetback" id="sheetback"></div>
+          <div class="sheet" id="sheet" role="dialog" aria-label="Start a new month?">
+            <h3>Start a new month?</h3>
+            <p>Bills start again. Spends already paid are cleared; upcoming ones stay.</p>
+            <label>New pay<input id="npay" inputmode="decimal"></label>
+            <label>Left from last month<input id="nleft" inputmode="decimal" placeholder="0.00"></label>
+            <div class="bb">
+              <button type="button" class="pri" id="nyes">Yes, start the new month</button>
+              <button type="button" id="njust">Just change the pay</button>
+              <button type="button" class="ter" id="nno">Cancel</button>
+            </div>
+          </div>
+          <div class="flash" id="flash"><div><b>Payday</b><span id="flashamt"></span></div></div>
+          <div class="tipb" id="tipb" role="tooltip"></div>
+        </div>
+      </div>
+      <div class="hint">This phone works. Add a spend, open a card, tap ⓘ, or press the arrow under the header. Example numbers.</div>
+    </div>
+  </div>
+
+  <section class="band" id="month">
+    <div class="wrap">
+      <div class="sh">
+        <h2>A month in Lite</h2>
+        <p>Your month runs from payday to payday. Drag through it: each bill turns green on its due day, so you can see what's already gone and what's still to come.</p>
+      </div>
+      <div class="month">
+        <div class="mtop">
+          <div class="mday" id="mday">28 Oct<small>Payday</small></div>
+          <div class="mstats">
+            <div><b class="gb" id="mgone"></b>Bills gone out</div>
+            <div><b class="bb2" id="mcome"></b>Bills still to come</div>
+          </div>
+        </div>
+        <div class="track" id="track"><div class="rail"></div><div class="fill" id="tfill"></div></div>
+        <label class="mlbl" for="dayslide">Drag the day</label>
+        <input type="range" id="dayslide" min="0" max="30" value="0">
+        <div class="mlist" id="mlist"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="safe">
+    <div class="wrap">
+      <div class="sh">
+        <h2>Your money stays yours</h2>
+        <p>There's no account to make and no server holding your numbers. Lite keeps them in your phone's browser, locks them, and backs them up to your own Google Drive.</p>
+      </div>
+      <div class="parts">
+        <div class="part">
+          <h3>Opens with your fingerprint</h3>
+          <p>Your fingerprint opens it. A passcode and ten backup codes are there if you need them.</p>
+          <div class="demo"><div>
+            <button class="fpbtn" id="fp" type="button" aria-label="Press and hold to unlock">
+              <svg class="arc" viewBox="0 0 92 92"><circle cx="46" cy="46" r="44" id="fparc"/></svg>
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 4a7 7 0 0 0-7 7v2"/><path d="M19 13v-2a7 7 0 0 0-3-5.7"/><path d="M8.5 20c.9-1.6 1.5-3.6 1.5-6v-3a2 2 0 0 1 4 0v3"/><path d="M14 17.5c-.2 1-.5 2-1 3"/><path d="M17 15c0 1.5-.2 2.8-.6 4"/><path d="M7 15.5c0 1-.2 2-.5 2.8"/></svg>
+            </button>
+            <div class="fpmsg" id="fpmsg">Press and hold</div>
+          </div></div>
+        </div>
+        <div class="part">
+          <h3>Backed up to your Drive</h3>
+          <p>One file per pay month in your own Google Drive, plus a daily safety copy. The little cloud shows when it's saved.</p>
+          <div class="demo"><div>
+            <button class="cloudb saved" id="cloudb" type="button">
+              <svg class="cloud" viewBox="0 0 40 30" aria-hidden="true">
+                <path class="cl" d="M11 26h19a7 7 0 0 0 1-13.9A10 10 0 0 0 12 10a8 8 0 0 0-1 16z"/>
+                <path class="tick" d="M15 17l4 4 7-8"/>
+                <path class="arr" d="M20 22v-9M16 16.5l4-4 4 4"/>
+                <circle class="wait" cx="33" cy="8" r="4"/>
+              </svg>
+              <span id="cloudtxt">Saved</span>
+            </button>
+            <div class="cloudsub" id="cloudsub">Tap to change something</div>
+          </div></div>
+        </div>
+        <div class="part">
+          <h3>A nudge when bills are due</h3>
+          <p>The bell groups bills due on the same day into one line. Open it to see each one, or tick them all at once.</p>
+          <div class="demo"><div class="bdemo" id="bdemo"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+
+<script src="site.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fmt = n => (n < 0 ? '−£' : '£') + Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const num = v => { const n = parseFloat(String(v).replace(/[£,\s]/g, '')); return isFinite(n) ? Math.round(n * 100) / 100 : NaN; };
+  const chev = '<svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+  // ---------- example month (the demo's own numbers, not anyone's real money) ----------
+  const TODAY = '30 Oct';
+  const S = {
+    pay: 2500, left: 0,
+    bills: [
+      { n: 'Rent', d: 28, cat: 'Household', a: 650.00, h: [650, 650, 650, 650, 650, 650] },
+      { n: 'Car finance', d: 1, cat: 'Car', a: 189.73, h: [189.73, 189.73, 189.73, 189.73, 189.73, 189.73] },
+      { n: 'Council tax', d: 1, cat: 'Household', a: 148.00, h: [139, 148, 148, 148, 148, 148] },
+      { n: 'Octopus Energy', d: 1, cat: 'Household', a: 96.00, h: [74, 74, 88, 96, 96, 96] },
+      { n: 'Car insurance', d: 1, cat: 'Car', a: 54.20, h: [54.2, 54.2, 54.2, 54.2, 54.2, 54.2] },
+      { n: 'EE mobile', d: 1, cat: 'Phone', a: 32.00, h: [30, 30, 32, 32, 32, 32] },
+      { n: 'Netflix', d: 12, cat: 'Subscriptions', a: 13.80, h: [10.99, 10.99, 12.99, 12.99, 13.80, 13.80] },
+    ],
+    pots: [{ n: 'Shopping', a: 400 }, { n: 'Fuel', a: 150 }, { n: 'Going out', a: 0 }],
+    spends: [
+      { n: 'Costa', a: 12.50, cat: '', when: '25 Oct 2024' },
+      { n: 'Tesco', a: 34.20, cat: 'Food shopping', when: '25 Oct 2024' },
+      { n: 'Shell', a: 60.00, cat: 'Fuel', when: '30 Oct 2024' },
+    ],
+    card: [{ n: 'Amazon', a: 45.00, when: '25 Oct 2024' }],
+    limit: 500,
+  };
+  const CATS = ['Food shopping', 'Fuel', 'Going out', 'Shopping', 'Coffee', 'Takeaways', 'Household', 'Kids'];
+  const guess = n => { n = n.toLowerCase();
+    if (/shell|bp|esso|petrol|texaco|fuel/.test(n)) return 'Fuel';
+    if (/tesco|asda|aldi|lidl|sainsbury|morrisons|coop|co-op/.test(n)) return 'Food shopping';
+    if (/pub|bar|cinema|bowling|pizza/.test(n)) return 'Going out';
+    if (/amazon|next|primark|argos/.test(n)) return 'Shopping';
+    return ''; };
+
+  // ---------- money: the same sums as docs/demo/money.js (v0.17 / v0.21 rules) ----------
+  const potOf = cat => S.pots.find(p => p.a > 0 && cat && p.n.toLowerCase() === cat.toLowerCase());
+  function compute() {
+    const live = S.bills.filter(b => !b.paused);
+    const bills = live.reduce((s, b) => s + b.a, 0);
+    const pots = S.pots.map(p => ({ ...p, spent: S.spends.filter(x => potOf(x.cat) === p).reduce((s, x) => s + x.a, 0) }));
+    const potSpent = pots.reduce((s, p) => s + p.spent, 0);
+    const potsSet = pots.reduce((s, p) => s + p.a, 0);
+    const potsLeft = pots.reduce((s, p) => s + Math.max(p.a - p.spent, 0), 0);
+    const potsOver = pots.reduce((s, p) => s + (p.a > 0 ? Math.max(p.spent - p.a, 0) : 0), 0);
+    const own = S.spends.filter(x => !potOf(x.cat)).reduce((s, x) => s + x.a, 0);
+    const all = S.spends.reduce((s, x) => s + x.a, 0);
+    const paid = S.spends.filter(x => !x.up).reduce((s, x) => s + x.a, 0);
+    const money = S.pay + S.left;
+    const used = S.card.reduce((s, x) => s + x.a, 0);
+    return { bills, pots, potSpent, potsSet, potsLeft, potsOver, own, all, paid, come: all - paid, money,
+      mfs: money - bills, start: money - bills - potsSet, actual: money - bills - all, used };
+  }
+
+  // number roll
+  const shown = new Map();
+  function roll(el, to, txt) {
+    const from = shown.has(el) ? shown.get(el) : 0; shown.set(el, to);
+    const out = v => (txt ? txt(v) : fmt(v));
+    if (reduce || Math.abs(from - to) < .005) { el.textContent = out(to); return; }
+    const t0 = performance.now(), d = 750;
+    const step = now => { const k = Math.min((now - t0) / d, 1), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = out(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+  const C = 2 * Math.PI * 40;
+  function ring(parts) {
+    let start = 0;
+    parts.forEach(([cls, p]) => {
+      const el = document.querySelector('.ring .' + cls), len = Math.max(Math.min(p, 1 - start), 0) * C;
+      el.setAttribute('stroke-dasharray', (len > 3 ? len - 2 : len) + ' ' + C);
+      el.setAttribute('stroke-dashoffset', -start * C); start += Math.max(p, 0);
+    });
+  }
+
+  function drawTop() {
+    const r = compute(), f = x => r.money > 0 ? Math.max(x, 0) / r.money : 0, pc = x => Math.round(100 * f(x)) + '%';
+    roll($('big'), r.actual); roll($('r-bills'), r.bills); roll($('r-spends'), r.own); roll($('r-actual'), r.actual); roll($('r-start'), r.start);
+    const pl = r.potsLeft - r.potsOver;
+    $('potword').textContent = pl < 0 ? 'Pots over' : 'Pots left';
+    $('r-pots').style.color = pl < 0 ? 'var(--bad)' : '';
+    roll($('r-pots'), pl);
+    $('big').classList.toggle('low', r.actual < 0);
+    $('r-pay').textContent = fmt(S.pay);
+    $('r-left').textContent = S.left ? fmt(S.left) : 'Add';
+    ring([['sb', f(r.bills)], ['sp', f(r.potSpent)], ['ss', f(r.own)], ['sf', f(r.actual)]]);
+    $('ringpc').textContent = pc(r.actual);
+    $('key').innerHTML = `<span><i class="dot bill"></i>Bills ${pc(r.bills)}</span>·<span><i class="dot pot"></i>Pots ${pc(r.potSpent)}</span>·<span><i class="dot spend"></i>Spends ${pc(r.own)}</span>·<span><i class="dot spare"></i>Spare ${pc(r.actual)}</span>`;
+    // zopa
+    const zp = Math.min(Math.max(r.used / S.limit, 0), 1);
+    $('zu').setAttribute('stroke-dasharray', Math.max(zp * C - 1.5, 0) + ' ' + C);
+    roll($('zpc'), zp * 100, v => Math.round(v) + '%'); roll($('z-used'), r.used); roll($('z-free'), S.limit - r.used); roll($('cc-free'), S.limit - r.used);
+    // spend sums
+    roll($('s-mfs'), r.mfs); roll($('s-paid'), r.paid); roll($('s-come'), r.come); roll($('s-left'), r.mfs - r.all);
+  }
+
+  // ---------- spends ----------
+  let mode = 'paid', view = 'all', pickFor = null;
+  function drawSpends() {
+    const box = $('slist'); box.innerHTML = '';
+    $('scount').textContent = S.spends.length + (S.spends.length === 1 ? ' spend' : ' spends');
+    const up = S.spends.filter(s => s.up), paid = S.spends.filter(s => !s.up);
+    const row = s => {
+      const pot = potOf(s.cat);
+      const where = pot ? `<i class="dot pot"></i>${esc(pot.n)}` : (s.cat ? esc(s.cat) : '<button type="button" class="addcat">+ category</button>');
+      const el = document.createElement('div'); el.className = 'row' + (s.up ? ' up' : '');
+      el.innerHTML = `<div><div class="n">${esc(s.n)}</div><div class="s">${s.up ? 'No date yet' : s.when} · ${where}
+        <button type="button" class="info" data-tip="${s.up ? 'No date yet. It counts against your spare now. Tap Paid? when it has gone out.' : 'This is the date you added it. If it went out on another day, tap ⋯ to change the date.'}">ⓘ</button></div></div>
+        <div><div class="a">${fmt(s.a)}</div>${s.up ? '<button type="button" class="paidq">Paid?</button>' : ''}</div>
+        <button type="button" class="more" aria-label="Remove ${esc(s.n)}" title="Remove">⋯</button>`;
+      const add = el.querySelector('.addcat');
+      if (add) add.onclick = () => { pickFor = pickFor === s ? null : s; drawSpends(); };
+      if (pickFor === s) {
+        const pk = document.createElement('div'); pk.className = 'catpick';
+        pk.innerHTML = CATS.map(c => `<button type="button" class="chip">${c}</button>`).join('');
+        pk.querySelectorAll('.chip').forEach(b => b.onclick = () => { s.cat = b.textContent; pickFor = null; drawSpends(); drawPots(); drawTop(); });
+        el.appendChild(pk);
+      }
+      const pq = el.querySelector('.paidq');
+      if (pq) pq.onclick = () => { s.up = false; s.when = TODAY + ' 2024'; drawSpends(); drawTop(); toast('Marked as paid'); };
+      el.querySelector('.more').onclick = () => { el.classList.add('out');
+        setTimeout(() => { S.spends.splice(S.spends.indexOf(s), 1); drawSpends(); drawPots(); drawTop(); }, reduce ? 0 : 280); };
+      return el;
+    };
+    if (up.length) { box.insertAdjacentHTML('beforeend', '<div class="grp">Still to come</div>'); up.forEach(s => box.appendChild(row(s)));
+      box.insertAdjacentHTML('beforeend', '<div class="grp">Paid</div>'); }
+    paid.forEach(s => box.appendChild(row(s)));
+    if (!S.spends.length) box.innerHTML = '<div class="note" style="padding:10px 0;border-top:1px solid var(--border)">No spends yet this month. Type one above.</div>';
+    // categories view
+    const cv = $('catv'); cv.innerHTML = '';
+    const groups = {}; S.spends.forEach(s => { const k = s.cat || 'Unsorted'; (groups[k] = groups[k] || []).push(s); });
+    const rows = Object.entries(groups).map(([k, v]) => [k, v.reduce((t, x) => t + x.a, 0), v.length]).sort((a, b) => b[1] - a[1]);
+    const max = Math.max(...rows.map(r => r[1]), 1);
+    rows.forEach(([k, t, n]) => { const d = document.createElement('div'); d.className = 'cr';
+      d.innerHTML = `<b>${esc(k)}</b><b>${fmt(t)}</b><small>${n} ${n === 1 ? 'spend' : 'spends'}</small><small></small><div class="cb"><i></i></div>`;
+      cv.appendChild(d); requestAnimationFrame(() => requestAnimationFrame(() => d.querySelector('i').style.width = (100 * t / max) + '%')); });
+    $('slist').hidden = view !== 'all'; cv.hidden = view === 'all';
+  }
+  document.querySelectorAll('#paidseg button').forEach(b => b.onclick = () => { mode = b.dataset.v;
+    document.querySelectorAll('#paidseg button').forEach(x => x.classList.toggle('on', x === b)); });
+  document.querySelectorAll('#viewseg button').forEach(b => b.onclick = () => { view = b.dataset.v;
+    document.querySelectorAll('#viewseg button').forEach(x => x.classList.toggle('on', x === b)); drawSpends(); });
+  const bad = form => { form.classList.remove('bad'); void form.offsetWidth; form.classList.add('bad'); setTimeout(() => form.classList.remove('bad'), 400); };
+  $('spendform').onsubmit = e => { e.preventDefault();
+    const a = num($('samt').value), n = $('sname').value.trim();
+    if (!(a > 0) || !n) return bad(e.target);
+    S.spends.unshift({ n, a, cat: guess(n), up: mode === 'up', when: TODAY + ' 2024' });
+    $('samt').value = ''; $('sname').value = ''; drawSpends(); drawPots(); drawTop();
+    $('stcard').classList.remove('pulse'); void $('stcard').offsetWidth; $('stcard').classList.add('pulse');
+  };
+
+  // ---------- pots ----------
+  function drawPots() {
+    const r = compute(), box = $('pots'); box.innerHTML = '';
+    r.pots.forEach(p => {
+      const el = document.createElement('div'); const over = p.a > 0 && p.spent > p.a;
+      el.className = 'pot' + (over ? ' over' : '');
+      el.innerHTML = `<div class="ph"><b>${esc(p.n)}</b>${p.a > 0
+          ? `<span class="l${over ? ' over' : ''}">${over ? fmt(p.spent - p.a) + ' over' : fmt(p.a - p.spent) + ' left'}</span>`
+          : `<button type="button" class="ulink set" style="margin-left:auto;font-size:13px">Set an amount</button>`}
+        <button type="button" class="more" aria-label="Remove ${esc(p.n)} pot" title="Remove">⋯</button></div>
+        <div class="pbar"><i style="width:0"></i></div>${p.a > 0 ? `<small>${fmt(p.spent)} of ${fmt(p.a)}</small>` : ''}`;
+      const set = el.querySelector('.set');
+      if (set) set.onclick = () => { const i = document.createElement('input'); i.className = 'setamt'; i.inputMode = 'decimal'; i.placeholder = '100';
+        set.replaceWith(i); i.focus(); const done = () => { const v = num(i.value); const src = S.pots.find(x => x.n === p.n); if (v > 0) src.a = v; drawPots(); drawTop(); };
+        i.onkeydown = e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') drawPots(); }; i.onblur = done; };
+      el.querySelector('.more').onclick = () => { S.pots = S.pots.filter(x => x.n !== p.n); drawPots(); drawSpends(); drawTop(); };
+      box.appendChild(el);
+      const w = p.a > 0 ? Math.min(100, 100 * p.spent / p.a) : 0;
+      requestAnimationFrame(() => requestAnimationFrame(() => el.querySelector('.pbar i').style.width = w + '%'));
+    });
+  }
+  $('potform').onsubmit = e => { e.preventDefault();
+    const a = num($('pamt').value), n = $('pname').value.trim();
+    if (!n || isNaN(a) && $('pamt').value) return bad(e.target);
+    if (S.pots.some(p => p.n.toLowerCase() === n.toLowerCase())) return bad(e.target);
+    S.pots.push({ n, a: a > 0 ? a : 0 }); if (!CATS.includes(n)) CATS.push(n);
+    $('pamt').value = ''; $('pname').value = ''; drawPots(); drawSpends(); drawTop(); };
+
+  // ---------- credit card ----------
+  function drawCard() {
+    const box = $('cclist'); box.innerHTML = '';
+    S.card.forEach(c => { const el = document.createElement('div'); el.className = 'ccrow' + (c.a < 0 ? ' pay' : '');
+      el.innerHTML = `<div><b>${esc(c.n)}</b><small>${c.when}</small></div><span class="a">${fmt(c.a)}</span><button type="button" class="x" aria-label="Remove">×</button>`;
+      el.querySelector('.x').onclick = () => { S.card.splice(S.card.indexOf(c), 1); drawCard(); drawTop(); };
+      box.appendChild(el); });
+  }
+  const ccAdd = sign => { const a = num($('camt').value), n = $('cname').value.trim() || (sign < 0 ? 'Paid off' : '');
+    if (!(a > 0) || !n) return bad($('ccform'));
+    S.card.unshift({ n, a: sign * a, when: TODAY + ' 2024' }); $('camt').value = ''; $('cname').value = ''; drawCard(); drawTop(); };
+  $('ccform').onsubmit = e => { e.preventDefault(); ccAdd(1); };
+  $('ccoff').onclick = () => ccAdd(-1);
+
+  // ---------- bills ----------
+  const MONTHS = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
+  const ord = d => d + (d % 10 === 1 && d !== 11 ? 'st' : d % 10 === 2 && d !== 12 ? 'nd' : d % 10 === 3 && d !== 13 ? 'rd' : 'th');
+  const isGone = d => d >= 28 ? d <= 30 : false;   // today is 30 Oct, payday the 28th
+  function drawBills() {
+    const box = $('blist'); box.innerHTML = '';
+    S.bills.forEach(b => {
+      const max = Math.max(...b.h, 1), avg = b.h.reduce((s, v) => s + v, 0) / b.h.length;
+      const el = document.createElement('div');
+      el.className = 'bl' + (b.paused ? ' paused' : isGone(b.d) ? ' paid' : '');
+      el.innerHTML = `<button type="button" aria-expanded="false"><span class="n">${esc(b.n)} <i>· ${ord(b.d)}</i></span><span class="s">${b.cat} · avg ${fmt(avg)}</span><span class="a">${fmt(b.a)}</span></button>
+        <div class="bx"><div><div class="bars">${b.h.map(v => `<span data-h="${Math.round(100 * v / max)}" title="${fmt(v)}"></span>`).join('')}</div>
+        <div class="bmon">${MONTHS.map(m => `<span>${m}</span>`).join('')}</div>
+        <div class="bact"><button type="button" class="chip pz">${b.paused ? 'Resume' : 'Pause'}</button></div></div></div>`;
+      const head = el.querySelector('button');
+      head.onclick = () => { const open = !el.classList.contains('open');
+        box.querySelectorAll('.bl.open').forEach(o => { o.classList.remove('open'); o.querySelector('button').setAttribute('aria-expanded', 'false'); o.querySelectorAll('.bars span').forEach(s => s.style.height = 0); });
+        if (open) { el.classList.add('open'); head.setAttribute('aria-expanded', 'true');
+          el.querySelectorAll('.bars span').forEach((s, i) => setTimeout(() => s.style.height = s.dataset.h + '%', reduce ? 0 : 70 * i + 60)); } };
+      el.querySelector('.pz').onclick = () => { b.paused = !b.paused; drawBills(); drawTop(); toast(b.paused ? b.n + ' paused: not counted' : b.n + ' counted again'); };
+      box.appendChild(el);
+    });
+  }
+
+  // ---------- folding cards ----------
+  document.querySelectorAll('.fold > .fh').forEach(h => h.onclick = () => {
+    const card = h.parentElement, open = !card.classList.contains('open');
+    card.classList.toggle('open', open); h.setAttribute('aria-expanded', open);
+    if (open) setTimeout(() => { const sc = $('scroll'), top = card.offsetTop - 10; if (top > sc.scrollTop + sc.clientHeight - 160) sc.scrollTop = top; }, reduce ? 0 : 200);
+  });
+
+  // ---------- floating ⓘ tips (they float, never push the page) ----------
+  const tip = $('tipb'), screen = $('screen'); let tipOwner = null;
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.info');
+    if (b && screen.contains(b)) {
+      if (tipOwner === b) { tip.classList.remove('on'); tipOwner = null; return; }
+      tip.textContent = b.dataset.tip; tipOwner = b;
+      const sr = screen.getBoundingClientRect(), br = b.getBoundingClientRect();
+      tip.style.left = Math.min(Math.max(br.left - sr.left - 110, 10), sr.width - 250) + 'px';
+      tip.style.top = (br.bottom - sr.top + 6) + 'px';
+      tip.classList.add('on'); return;
+    }
+    if (tipOwner) { tip.classList.remove('on'); tipOwner = null; }
+  });
+  $('scroll').addEventListener('scroll', () => { if (tipOwner) { tip.classList.remove('on'); tipOwner = null; } }, { passive: true });
+
+  // ---------- Settings + bell menus ----------
+  const rems = [
+    { k: 'bills', t: '1st · 5 bills', s: fmt(519.93) + ' · tick when they go out' },
+    { k: 'card', t: 'Zopa card due', s: 'Pay at least £25.00 by 5 Nov' },
+    { k: 'drive', t: 'Backup saved', s: 'Google Drive · today 09:12' },
+  ];
+  function drawRems() {
+    const box = $('rems'); box.innerHTML = rems.length ? '' : '<div class="note" style="padding:8px">All done.</div>';
+    rems.forEach(r => { const el = document.createElement('div'); el.className = 'rem';
+      el.innerHTML = `<b>${r.t}</b><small>${r.s}</small><button type="button" aria-label="Done">✓</button>`;
+      el.querySelector('button').onclick = e => { e.stopPropagation(); el.classList.add('out');
+        setTimeout(() => { rems.splice(rems.indexOf(r), 1); drawRems(); }, reduce ? 0 : 280); };
+      box.appendChild(el); });
+    const bn = $('bellnum'); bn.textContent = rems.length; bn.hidden = !rems.length; bn.classList.remove('bump'); void bn.offsetWidth; bn.classList.add('bump');
+  }
+  const menus = { setbtn: $('setmenu'), bellbtn: $('bellmenu') };
+  Object.entries(menus).forEach(([b, m]) => $(b).onclick = e => { e.stopPropagation(); const on = !m.classList.contains('on');
+    Object.values(menus).forEach(x => x.classList.remove('on')); m.classList.toggle('on', on); });
+  document.querySelectorAll('#setmenu .mi').forEach(b => b.onclick = () => { $('setmenu').classList.remove('on'); toast('Settings live in the real app'); });
+  document.addEventListener('click', e => { if (!e.target.closest('.menu')) Object.values(menus).forEach(x => x.classList.remove('on')); });
+
+  // ---------- Start a new month? sheet + payday moment ----------
+  const openSheet = () => { $('npay').value = S.pay.toFixed(2); const a = compute().actual; $('nleft').value = a > 0 ? a.toFixed(2) : '';
+    screen.classList.add('sheeton'); $('tabbtn').setAttribute('aria-expanded', 'true'); setTimeout(() => $('npay').focus({ preventScroll: true }), 350); };
+  const closeSheet = () => { screen.classList.remove('sheeton'); $('tabbtn').setAttribute('aria-expanded', 'false'); };
+  $('tabbtn').onclick = openSheet;
+  document.querySelectorAll('[data-sheet]').forEach(b => b.onclick = openSheet);
+  $('sheetback').onclick = closeSheet; $('nno').onclick = closeSheet;
+  screen.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  $('njust').onclick = () => { const p = num($('npay').value); if (p > 0) S.pay = p; closeSheet(); drawTop(); };
+  function payday() {
+    const p = num($('npay').value), l = num($('nleft').value);
+    if (p > 0) S.pay = p; S.left = l > 0 ? l : 0;
+    S.spends = S.spends.filter(s => s.up);
+    closeSheet();
+    $('flashamt').textContent = '+ ' + fmt(S.pay);
+    const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+    $('scroll').scrollTop = 0;
+    ring([['sb', 0], ['sp', 0], ['ss', 0], ['sf', 0]]); shown.set($('big'), 0);
+    setTimeout(() => { drawSpends(); drawPots(); drawTop(); }, reduce ? 0 : 900);
+  }
+  $('nyes').onclick = payday;
+  $('go-month').onclick = () => { $('screen').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); setTimeout(openSheet, reduce ? 0 : 500); };
+
+  let toastT;
+  function toast(msg) { tip.textContent = msg; tipOwner = null; tip.style.left = '50%'; tip.style.top = 'auto';
+    tip.style.transform = ''; tip.style.left = '20px'; tip.style.top = (screen.clientHeight - 70) + 'px';
+    tip.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => tip.classList.remove('on'), 1800); }
+
+  // ---------- first load: the ring fills from empty ----------
+  drawSpends(); drawPots(); drawCard(); drawBills(); drawRems(); $('bellnum').classList.remove('bump');
+  ring([['sb', 0], ['sp', 0], ['ss', 0], ['sf', 0]]);
+  setTimeout(drawTop, reduce ? 0 : 350);
+
+
+  // ---------- a month in Lite: drag through the days ----------
+  const start = new Date(2026, 9, 28), DAYS = 30;
+  const dayDate = i => { const d = new Date(start); d.setDate(d.getDate() + i); return d; };
+  const dayIdx = dom => { for (let i = 0; i <= DAYS; i++) if (dayDate(i).getDate() === dom) return i; return 0; };
+  const mbills = S.bills.map(b => ({ ...b, i: dayIdx(b.d) }));
+  const track = $('track');
+  const groups = {}; mbills.forEach(b => (groups[b.i] = groups[b.i] || []).push(b));
+  track.insertAdjacentHTML('beforeend', `<div class="mk pay" style="left:0%"><span class="t">Payday</span><span class="pin">£</span><span class="stem"></span></div>`);
+  Object.entries(groups).forEach(([i, bs], k) => {
+    const lo = k % 2 === 1;
+    track.insertAdjacentHTML('beforeend', `<div class="mk${lo ? ' lo' : ''}" data-i="${i}" style="left:${(100 * i / DAYS).toFixed(2)}%"><span class="t">${ord(dayDate(+i).getDate())}</span><span class="pin">${bs.length}</span><span class="stem"></span></div>`);
+  });
+  // move the payday pin's twin to the far end: next payday
+  track.insertAdjacentHTML('beforeend', `<div class="mk pay lo" style="left:100%"><span class="stem"></span><span class="pin">£</span><span class="t">Next pay</span></div>`);
+  $('mlist').innerHTML = mbills.map(b => `<div data-i="${b.i}"><span>${b.n} · ${ord(b.d)}</span><span>${fmt(b.a)}</span></div>`).join('');
+  function month() {
+    const i = +$('dayslide').value, d = dayDate(i);
+    $('mday').innerHTML = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + `<small>${i === 0 ? 'Payday' : i === DAYS ? 'Day before payday' : 'Day ' + (i + 1) + ' of the month'}</small>`;
+    $('tfill').style.width = (100 * i / DAYS) + '%';
+    track.querySelectorAll('.mk[data-i]').forEach(m => m.classList.toggle('done', +m.dataset.i <= i));
+    $('mlist').querySelectorAll('div').forEach(m => m.classList.toggle('done', +m.dataset.i <= i));
+    const gone = mbills.filter(b => b.i <= i).reduce((s, b) => s + b.a, 0), all = mbills.reduce((s, b) => s + b.a, 0);
+    roll($('mgone'), gone); roll($('mcome'), all - gone);
+  }
+  $('dayslide').oninput = month; month();
+
+  // ---------- fingerprint: press and hold ----------
+  const fp = $('fp'), arc = $('fparc'); let hold = null;
+  const fpReset = msg => { fp.classList.remove('ok'); arc.style.transition = 'stroke-dashoffset .25s'; arc.style.strokeDashoffset = 280; $('fpmsg').textContent = msg || 'Press and hold'; };
+  fp.addEventListener('pointerdown', e => { e.preventDefault();
+    if (fp.classList.contains('ok')) return fpReset();
+    arc.style.transition = 'stroke-dashoffset .8s linear'; arc.style.strokeDashoffset = 0; $('fpmsg').textContent = 'Keep holding…';
+    hold = setTimeout(() => { hold = null; fp.classList.add('ok'); $('fpmsg').textContent = 'Hi Darren 👋'; if (navigator.vibrate) navigator.vibrate(25); }, 800); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => fp.addEventListener(ev, () => { if (hold) { clearTimeout(hold); hold = null; fpReset('Hold a little longer'); } }));
+  fp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault();
+    if (fp.classList.contains('ok')) fpReset(); else { fp.classList.add('ok'); arc.style.strokeDashoffset = 0; $('fpmsg').textContent = 'Hi Darren 👋'; } } });
+
+  // ---------- Drive cloud: change → waiting → saving → saved ----------
+  const cb = $('cloudb'); let cbT = [];
+  cb.onclick = () => { cbT.forEach(clearTimeout); cbT = [];
+    const set = (cls, txt, sub) => { cb.className = 'cloudb ' + cls; $('cloudtxt').textContent = txt; $('cloudsub').textContent = sub; };
+    set('wait', 'Waiting', 'You changed something. It sends a minute later.');
+    cbT.push(setTimeout(() => set('saving', 'Saving', 'Sending to your Drive…'), reduce ? 300 : 1300));
+    cbT.push(setTimeout(() => set('saved', 'Saved', 'Saved to "Where’s My Money Lite" in your Drive. Tap again.'), reduce ? 600 : 3000)); };
+
+  // ---------- bell: bills due the same day = one line ----------
+  const day1 = S.bills.filter(b => b.d === 1);
+  function drawBell(done) {
+    const box = $('bdemo');
+    if (done) { box.innerHTML = '<div class="rem" style="grid-template-columns:1fr"><b style="color:var(--good)">✓ All 5 ticked as paid</b><small>They turn green in Bills.</small></div><button type="button" class="chip" id="bellreset" style="margin-top:6px">Show it again</button>';
+      $('bellreset').onclick = () => drawBell(false); return; }
+    box.innerHTML = `<div class="rem" id="grp"><b><button type="button" class="chevb" aria-expanded="false">${chev}</button> 1st · ${day1.length} bills · ${fmt(day1.reduce((s, b) => s + b.a, 0))}</b><small>Due today. Check your bank app.</small><button type="button" aria-label="Tick all as paid" id="tickall">✓</button>
+      <div class="kids"><div>${day1.map(b => `<span><span>${b.n}</span><span>${fmt(b.a)}</span></span>`).join('')}</div></div></div>`;
+    const g = $('grp'), cbtn = g.querySelector('.chevb');
+    cbtn.onclick = () => { const o = g.classList.toggle('open'); cbtn.setAttribute('aria-expanded', o); };
+    $('tickall').onclick = () => { g.classList.add('out'); setTimeout(() => drawBell(true), reduce ? 0 : 300); };
+  }
+  drawBell(false);
+})();
+</script>
+</body>
+</html>

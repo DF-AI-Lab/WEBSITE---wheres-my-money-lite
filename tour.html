@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Tour · Where's My Money? Lite</title>
+<meta name="description" content="Where's My Money? Lite: see what's spare, payday to payday. No bank login, your money stays on your phone.">
+<link rel="icon" href="lite-192.png">
+<meta name="theme-color" content="#0f1513">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: one dark stage. The real app sits in a phone in the middle; a HUD layer (SVG) draws leader lines from a callout panel
+   to the part being explained. Steps run in order (it is a real sequence), with Back / Next, arrows, autoplay and an optional voice. */
+:root {
+  --bg: #070b0a; --bg2: #0c1311; --card: #151d1a; --text: #e9f0ed; --muted: #8fa19a; --border: #24312d; --row: #1b2522;
+  --mint: #3fd0a4; --mint2: #7ff0cc; --hud: #46e3b5; --hudglow: rgba(70,227,181,.35);
+  --bill: #7fb0ff; --spend: #f2b632; --pot: #f59a4a; --bad: #f07a6a; --zused: #e06cd8; --zfree: #6b5a9e; --zfreetext: #a99ad6;
+  --hudfont: "Chakra Petch", "Manrope", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.2,.8,.2,1);
+  color-scheme: dark;
+}
+/* A HUD is a dark-only look by choice: every colour is set explicitly here. */
+* { box-sizing: border-box; }
+html { overflow-x: clip; }
+body { background: var(--bg); color: var(--text); font: 16px/1.5 var(--body); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--mint2); outline-offset: 2px; }
+
+.stage { position: relative; min-height: 860px; overflow: hidden; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 45%, rgba(63,208,164,.10), transparent 70%),
+    linear-gradient(var(--bg), var(--bg2)); }
+.grid { position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: linear-gradient(rgba(70,227,181,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(70,227,181,.06) 1px, transparent 1px);
+  background-size: 44px 44px; mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%); }
+.top { position: relative; z-index: 4; display: flex; align-items: center; gap: 12px; max-width: 1180px; margin: 0 auto 10px; }
+.top img { width: 34px; height: 34px; border-radius: 9px; }
+.top b { font-weight: 800; }
+.sys { margin-left: auto; font: 600 12px var(--hudfont); letter-spacing: .14em; color: var(--hud); display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+.sys i { width: 8px; height: 8px; border-radius: 50%; background: var(--hud); box-shadow: 0 0 10px var(--hud); animation: blink 2s infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+
+.center { position: relative; display: grid; justify-items: center; z-index: 2; }
+/* HUD rings around the phone */
+.rings { position: absolute; top: 50%; left: 50%; width: 640px; height: 640px; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 1s; max-width: 160vw; }
+.on .rings { opacity: 1; }
+.rings circle { fill: none; stroke: var(--hud); }
+.rings .r1 { stroke-width: 1; stroke-dasharray: 2 8; opacity: .5; transform-origin: 50% 50%; animation: spin 60s linear infinite; }
+.rings .r2 { stroke-width: 2; stroke-dasharray: 120 40 10 40; opacity: .25; transform-origin: 50% 50%; animation: spin 40s linear infinite reverse; }
+.rings .r3 { stroke-width: 1; opacity: .18; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.phone { position: relative; width: 340px; max-width: 100%; background: #030505; border-radius: 46px; padding: 10px; box-shadow: 0 0 0 1px rgba(70,227,181,.15), 0 30px 80px rgba(0,0,0,.6), 0 0 80px rgba(63,208,164,.08); }
+.screen { position: relative; background: #0f1513; border-radius: 37px; overflow: hidden; height: 690px; }
+.island { height: 28px; display: grid; place-items: center; } .island i { width: 88px; height: 24px; border-radius: 99px; background: #030505; }
+.app { padding: 2px 11px 16px; transition: filter .6s; }
+.boot .app { filter: brightness(.2) blur(2px); }
+/* scan line during boot and on each step */
+.scan { position: absolute; left: 0; right: 0; height: 80px; top: -80px; background: linear-gradient(transparent, rgba(70,227,181,.18), transparent); pointer-events: none; z-index: 3; }
+.scan.go { animation: scan 1.1s var(--ease); }
+@keyframes scan { to { top: 100%; } }
+
+.ahead { display: flex; gap: 9px; align-items: flex-start; padding: 4px 2px 8px; }
+.ahead img { width: 40px; height: 40px; border-radius: 10px; }
+.ahead .nm { font: 800 17px/1.15 var(--body); } .ahead .tg { font-size: 11px; font-weight: 700; color: var(--mint); }
+.aside { margin-left: auto; display: grid; justify-items: end; gap: 5px; }
+.setb { border: 1px solid var(--border); background: var(--card); border-radius: 11px; padding: 5px 9px; font-size: 11px; font-weight: 700; }
+.vr { display: flex; gap: 6px; align-items: center; font-size: 10px; color: var(--muted); }
+.bell { position: relative; width: 28px; height: 26px; border: 1px solid var(--border); background: var(--card); border-radius: 8px; display: grid; place-items: center; color: var(--spend); }
+.bell b { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; border-radius: 99px; background: var(--bad); color: #fff; font-size: 9px; line-height: 16px; text-align: center; }
+.c { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 10px; transition: box-shadow .4s, border-color .4s; }
+.lbl { font-size: 10px; font-weight: 800; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
+.sth { display: flex; justify-content: space-between; gap: 8px; }
+.big { font: 800 34px/1.05 var(--body); color: var(--mint); margin: 3px 0 5px; letter-spacing: -.02em; }
+.key { font-size: 10px; color: var(--muted); }
+.key i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin: 0 3px 0 0; vertical-align: 1px; }
+.ring { width: 84px; height: 84px; flex: none; }
+.ring circle { fill: none; stroke-width: 10; }
+.ring text { fill: var(--text); font: 800 17px var(--body); }
+.rows { margin-top: 10px; font-size: 13px; }
+.rows .r { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px dashed var(--border); color: var(--muted); }
+.rows .r b { color: var(--text); }
+.rows .u { color: var(--text); font-weight: 700; border-bottom: 2px dotted var(--muted); }
+.rows .t { color: var(--text); font-weight: 800; border: 0; }
+.rows .line { border-top: 2px solid var(--text); padding: 0; margin-top: 4px; }
+.zc { display: flex; justify-content: space-between; align-items: center; }
+.zrow { font-size: 13px; color: var(--muted); margin-top: 6px; } .zrow b { color: var(--text); margin-left: 8px; } .zrow b.f { color: var(--zfreetext); }
+.zring { width: 78px; height: 78px; } .zring circle { fill: none; stroke-width: 9; } .zring text { fill: var(--text); font: 800 17px var(--body); }
+.fold { display: flex; align-items: center; font: 800 16px var(--body); padding: 14px; }
+.fold::after { content: "›"; margin-left: auto; color: var(--muted); font-size: 22px; line-height: 1; }
+.fold i { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+.dim .c, .dim .ahead > * { opacity: .28; transition: opacity .5s; }
+.dim .c.lit, .dim .ahead > .lit { opacity: 1; }
+.c.lit, .lit { box-shadow: 0 0 0 1.5px var(--hud), 0 0 26px var(--hudglow); border-color: transparent; border-radius: 16px; }
+
+/* lock layer (last step) */
+.lock { position: absolute; inset: 0; background: rgba(5,8,7,.92); backdrop-filter: blur(6px); display: grid; place-items: center; text-align: center; opacity: 0; pointer-events: none; transition: opacity .5s; z-index: 4; }
+.lock.on { opacity: 1; pointer-events: auto; }
+.lock h3 { font: 800 28px var(--body); margin: 0; }
+.lock p { color: var(--muted); margin: 4px 0 26px; font-size: 13px; }
+.fp { width: 84px; height: 84px; border-radius: 50%; border: 0; background: var(--row); color: var(--mint); display: grid; place-items: center; margin: 0 auto; position: relative; touch-action: none; user-select: none; -webkit-user-select: none; }
+.fp .arc { position: absolute; inset: 0; transform: rotate(-90deg); }
+.fp .arc circle { fill: none; stroke: var(--mint); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 258; stroke-dashoffset: 258; }
+.fp.ok { background: var(--mint); color: #06221b; }
+
+/* HUD overlay */
+svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; overflow: visible; }
+.hud .lead { fill: none; stroke: var(--hud); stroke-width: 1.5; filter: drop-shadow(0 0 4px var(--hudglow)); }
+.hud .lead.draw { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw .7s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.hud .dotend { fill: var(--hud); filter: drop-shadow(0 0 6px var(--hud)); }
+.hud .ret circle, .hud .ret path { fill: none; stroke: var(--hud); }
+.hud .ret .spinr { transform-box: fill-box; transform-origin: center; animation: spin 6s linear infinite; }
+.hud .ret { opacity: 0; transition: opacity .4s .5s; }
+.hud .ret.on { opacity: 1; }
+
+.panel { position: absolute; z-index: 4; width: 330px; max-width: calc(100% - 32px); background: rgba(10,18,16,.82); backdrop-filter: blur(8px);
+  border: 1px solid rgba(70,227,181,.4); border-radius: 4px 16px 4px 16px; padding: 16px 18px 14px; box-shadow: 0 0 30px rgba(63,208,164,.12);
+  opacity: 0; transform: translateY(8px); transition: opacity .35s, transform .45s var(--ease); }
+.panel.on { opacity: 1; transform: none; }
+.panel::before, .panel::after { content: ""; position: absolute; width: 14px; height: 14px; border: 2px solid var(--hud); }
+.panel::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+.panel::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+.ph { font: 600 11px var(--hudfont); letter-spacing: .16em; color: var(--hud); text-transform: uppercase; display: flex; justify-content: space-between; }
+.panel h2 { font: 800 22px/1.15 var(--body); margin: 8px 0 6px; letter-spacing: -.01em; }
+.panel p { margin: 0; color: #c6d4cf; font-size: 15px; min-height: 4.5em; }
+.panel p .cur { display: inline-block; width: 8px; height: 1em; background: var(--hud); vertical-align: -2px; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+.panel .try { margin-top: 10px; font-size: 12px; color: var(--hud); font-family: var(--hudfont); letter-spacing: .06em; }
+
+.controls { position: relative; z-index: 5; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+.hbtn { border: 1px solid rgba(70,227,181,.45); background: rgba(12,20,18,.8); border-radius: 10px; padding: 10px 16px; font: 700 14px var(--hudfont); letter-spacing: .08em; text-transform: uppercase; color: var(--text); transition: background .2s, transform .12s; }
+.hbtn:hover { background: rgba(70,227,181,.12); } .hbtn:active { transform: scale(.96); }
+.hbtn.pri { background: var(--mint); color: #06221b; border-color: transparent; }
+.hbtn[aria-pressed="true"] { background: rgba(70,227,181,.18); }
+.pips { display: flex; gap: 6px; }
+.pips button { width: 26px; height: 6px; border-radius: 99px; border: 0; background: var(--border); padding: 0; transition: background .3s, width .3s; }
+.pips button.on { background: var(--hud); width: 40px; box-shadow: 0 0 10px var(--hudglow); }
+.pips button.seen { background: rgba(70,227,181,.45); }
+
+/* intro gate: asks your name, then boots */
+.gate { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; background: rgba(4,7,6,.78); backdrop-filter: blur(4px); transition: opacity .6s; padding: 16px; }
+.gate.off { opacity: 0; pointer-events: none; }
+.gbox { width: 380px; max-width: 100%; text-align: center; }
+.gbox .ph { justify-content: center; }
+.gbox h1 { font: 800 clamp(30px, 5vw, 42px)/1.05 var(--body); margin: 14px 0 10px; letter-spacing: -.02em; text-wrap: balance; }
+.gbox p { color: var(--muted); margin: 0 0 22px; }
+.gbox form { display: flex; gap: 8px; }
+.gbox input { flex: 1; min-width: 0; background: rgba(12,20,18,.9); border: 1px solid rgba(70,227,181,.45); border-radius: 10px; padding: 12px 14px; font: 600 16px var(--body); color: var(--text); }
+.gbox .opt { margin-top: 14px; font-size: 13px; color: var(--muted); display: flex; gap: 8px; justify-content: center; align-items: center; }
+.bootlog { font: 500 12px/1.7 var(--hudfont); color: var(--hud); letter-spacing: .1em; text-transform: uppercase; text-align: left; margin-top: 18px; min-height: 6.8em; }
+
+.notes { max-width: 1180px; margin: 0 auto; padding: 40px max(16px, env(safe-area-inset-right, 0px)) 60px max(16px, env(safe-area-inset-left, 0px)); color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
+.notes h2 { color: var(--text); font: 800 22px var(--body); margin: 0; }
+.notes ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+
+
+/* open cards inside the phone (the app is taller than the screen, so it scrolls) */
+.app { transition: filter .6s, transform .95s var(--ease); will-change: transform; }
+.c > .fold { padding: 0 0 8px; }
+.c > .fold::after { content: none; }
+.seg2 { display: inline-flex; gap: 2px; background: #0f1513; border: 1px solid var(--border); border-radius: 99px; padding: 3px; margin-bottom: 4px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.seg2 span { padding: 3px 10px; border-radius: 99px; } .seg2 .on { background: var(--spend); color: #241a00; }
+.li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.li span { display: grid; font-weight: 700; } .li small { color: var(--muted); font-weight: 600; font-size: 11px; }
+.li.paid span { color: var(--mint); } .li.tot { font-weight: 800; }
+.pt { font-size: 13px; padding: 7px 0; } .pt > div:first-child { display: flex; justify-content: space-between; font-weight: 700; } .pt b { color: var(--mint); font-weight: 800; }
+.pb { height: 7px; background: var(--row); border-radius: 99px; overflow: hidden; margin-top: 5px; } .pb i { display: block; height: 100%; background: var(--pot); border-radius: 99px; }
+.pt.lit { border-radius: 10px; padding-inline: 6px; }
+@media (max-width: 980px) {
+  .phone { width: 310px; border-radius: 42px; }
+  .screen { height: 560px; border-radius: 33px; }
+}
+@media (max-width: 980px) {
+  .stage { min-height: 0; }
+  .panel { position: relative; left: auto !important; top: auto !important; margin: 18px auto 0; width: 100%; max-width: 420px; }
+  .center { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+</style>
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-page="tour">
+<div class="stage boot" id="stage">
+  <div class="grid"></div>
+  <div class="top"><img src="lite-192.png" alt=""><b>Where's My Money? Lite</b><span class="sys"><i></i><span id="sysline">Standby</span></span></div>
+
+  <div class="center" id="center">
+    <svg class="rings" viewBox="0 0 640 640" aria-hidden="true"><circle class="r1" cx="320" cy="320" r="300"/><circle class="r2" cx="320" cy="320" r="270"/><circle class="r3" cx="320" cy="320" r="240"/></svg>
+    <div class="phone" id="phone">
+      <div class="screen" id="screen">
+        <div class="island"><i></i></div>
+        <div class="scan" id="scan"></div>
+        <div class="app" id="app">
+          <div class="ahead">
+            <img src="lite-192.png" alt="" data-t="brand">
+            <div data-t="brand2"><div class="nm">Where's My Money?</div><div class="tg">Payday to payday · Lite</div></div>
+            <div class="aside" data-t="menu"><span class="setb">⚙ Settings</span><div class="vr"><span class="bell">🔔<b>3</b></span>demo.v0.59</div></div>
+          </div>
+          <div class="c" data-t="spare">
+            <div class="sth">
+              <div><div class="lbl">Spare cash left ⓘ</div><div class="big" id="big">£1,209.57</div>
+                <div class="key"><i style="background:var(--bill)"></i>Bills 47% · <i style="background:var(--pot)"></i>Pots 2% · <i style="background:var(--spend)"></i>Spends 2% · <i style="background:var(--mint)"></i>Spare 48%</div></div>
+              <svg class="ring" viewBox="0 0 100 100" id="ring"><circle cx="50" cy="50" r="40" stroke="#24312d"/>
+                <circle cx="50" cy="50" r="40" stroke="var(--bill)" stroke-dasharray="116 251.3" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" stroke="var(--pot)" stroke-dasharray="4 251.3" stroke-dashoffset="-118" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" stroke="var(--spend)" stroke-dasharray="4 251.3" stroke-dashoffset="-124" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="40" stroke="var(--mint)" stroke-dasharray="119 251.3" stroke-dashoffset="-130" transform="rotate(-90 50 50)"/>
+                <text x="50" y="56" text-anchor="middle">48%</text></svg>
+            </div>
+            <div class="rows" data-t="rows">
+              <div class="r"><span>Pay</span><span class="u">£2,500.00</span></div>
+              <div class="r"><span>+ Left from last month</span><span class="u">Add</span></div>
+              <div class="r"><span>● − Bills</span><b style="color:var(--bill)">£1,183.73</b></div>
+              <div class="r"><span>● − Spends ⓘ</span><b style="color:var(--spend)">£46.70</b></div>
+              <div class="r"><span>● Pots left ⓘ</span><b style="color:var(--pot)">£490.00</b></div>
+              <div class="r line"></div>
+              <div class="r t" data-t="start"><span>Starting spare</span><span>£766.27</span></div>
+              <div class="r t"><span>Actual spare</span><span>£1,209.57</span></div>
+            </div>
+          </div>
+          <div class="c" data-t="zopa"><div class="zc"><div><div class="lbl">Zopa credit card</div>
+              <div class="zrow">● Used<b>£45.00</b></div><div class="zrow">● Free<b class="f">£455.00</b></div></div>
+            <svg class="zring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" stroke="var(--zfree)"/><circle cx="50" cy="50" r="40" stroke="var(--zused)" stroke-dasharray="21 251.3" transform="rotate(-90 50 50)"/><text x="50" y="56" text-anchor="middle">9%</text></svg></div></div>
+          <div class="c" data-t="spend"><div class="fold" style="color:var(--spend)"><i style="background:var(--spend)"></i>Add a spend</div>
+            <div class="seg2"><span class="on">Paid</span><span>Upcoming</span></div>
+            <div class="li"><span>Tesco<small>Shopping</small></span><b>£86.40</b></div>
+            <div class="li"><span>Shell<small>Fuel</small></span><b>£60.00</b></div>
+            <div class="li"><span>Amazon<small>Unsorted</small></span><b>£40.00</b></div>
+            <div class="li"><span>Cinema<small>Going out</small></span><b>£13.60</b></div>
+            <div class="li"><span>Greggs<small>Unsorted</small></span><b>£6.70</b></div></div>
+          <div class="c" data-t="pots"><div class="fold" style="color:var(--pot)"><i style="background:var(--pot)"></i>Monthly pots</div>
+            <div class="pt"><div><span>Shopping</span><b>£313.60 left</b></div><div class="pb"><i style="width:22%"></i></div></div>
+            <div class="pt" data-t="fuel"><div><span>Fuel</span><b>£90.00 left</b></div><div class="pb"><i style="width:40%"></i></div></div>
+            <div class="pt"><div><span>Going out</span><b>£86.40 left</b></div><div class="pb"><i style="width:14%"></i></div></div></div>
+          <div class="c" data-t="bills"><div class="fold" style="color:var(--bill)"><i style="background:var(--bill)"></i>Bills (every month)</div>
+            <div class="li paid"><span>✓ Rent · 28th<small>Household</small></span><b>£650.00</b></div>
+            <div class="li"><span>Car finance · 1st<small>Car</small></span><b>£189.73</b></div>
+            <div class="li"><span>Council tax · 1st<small>Household</small></span><b>£148.00</b></div>
+            <div class="li"><span>Energy · 1st<small>Household</small></span><b>£110.00</b></div>
+            <div class="li"><span>Gym · 1st<small>Health</small></span><b>£37.20</b></div>
+            <div class="li"><span>Phone · 5th<small>Phone</small></span><b>£35.00</b></div>
+            <div class="li"><span>Netflix · 12th<small>Subscriptions</small></span><b>£13.80</b></div>
+            <div class="li tot"><span>Total</span><b>£1,183.73</b></div></div>
+        </div>
+        <div class="lock" id="lock"><div>
+          <h3 id="lockhi">Hi Darren 👋</h3><p>Where's My Money? · Lite</p>
+          <button class="fp" id="fp" type="button" aria-label="Press and hold to unlock">
+            <svg class="arc" viewBox="0 0 84 84"><circle cx="42" cy="42" r="41" id="fparc"/></svg>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 4a7 7 0 0 0-7 7v2"/><path d="M19 13v-2a7 7 0 0 0-3-5.7"/><path d="M8.5 20c.9-1.6 1.5-3.6 1.5-6v-3a2 2 0 0 1 4 0v3"/><path d="M14 17.5c-.2 1-.5 2-1 3"/><path d="M17 15c0 1.5-.2 2.8-.6 4"/><path d="M7 15.5c0 1-.2 2-.5 2.8"/></svg>
+          </button><p style="margin-top:12px" id="fpmsg">Press and hold</p></div></div>
+      </div>
+    </div>
+    <div class="panel" id="panel" role="status" aria-live="polite">
+      <div class="ph"><span id="pstep">01 / 09</span><span id="ptag">Spare cash</span></div>
+      <h2 id="ptitle"></h2>
+      <p id="ptext"></p>
+      <div class="try" id="ptry"></div>
+    </div>
+  </div>
+  <svg class="hud" id="hud" aria-hidden="true"></svg>
+
+  <div class="controls" id="controls" hidden>
+    <button class="hbtn" id="back" type="button">Back</button>
+    <div class="pips" id="pips"></div>
+    <button class="hbtn pri" id="next" type="button">Next</button>
+    <button class="hbtn" id="auto" type="button" aria-pressed="false">Autoplay</button>
+    <button class="hbtn" id="voice" type="button" aria-pressed="false">Voice</button>
+  </div>
+
+  <div class="gate" id="gate"><div class="gbox">
+    <div class="ph"><span>Lite · guided tour</span></div>
+    <h1>Let me show you around.</h1>
+    <p>Ten short stops, about a minute. First, what should I call you?</p>
+    <form id="gform"><input id="gname" value="Darren" aria-label="Your first name" autocomplete="off"><button class="hbtn pri" type="submit">Start</button></form>
+    <div class="bootlog" id="bootlog"></div>
+  </div></div>
+</div>
+
+<section class="notes">
+  <h2>Motion notes for Higgsfield / Remotion</h2>
+  <ol>
+    <li>0–1.2s · Boot: grid fades in, rings spin up, "Standby → Online", scan line sweeps the screen top to bottom.</li>
+    <li>Each stop: everything dims to 28%, the part lights with a mint outline glow, a reticle locks on (0.5s delay).</li>
+    <li>Leader line draws from the panel corner to the part in 0.7s (stroke-dashoffset), elbow at 40% of the way.</li>
+    <li>Panel slides up 8px and fades; the line text types at ~28 characters a second with a block cursor.</li>
+    <li>Last stop: the lock screen fades over, press and hold the fingerprint for 0.8s, ring fills, "Welcome in".</li>
+    <li>For a video: film the real app at 9:16, keep the HUD lines as a code overlay so numbers stay sharp.</li>
+  </ol>
+</section>
+
+<script src="site.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let NAME = 'Darren';
+  const STEPS = [
+    { t: 'spare', tag: 'Spare cash', h: n => `This is the one number, ${n}.`, p: 'Spare cash left: what is really yours until next payday, after bills and spends. Everything else on this screen explains it.', tr: 'Look: £1,209.57' },
+    { t: 'spare', sub: '#ring', tag: 'The ring', h: () => 'Where the money went, at a glance.', p: 'Blue is bills, orange is pots, gold is spends, mint is what is spare. The number in the middle is your spare as a share of your pay.', tr: '48% still spare' },
+    { t: 'rows', tag: 'Pay and left', h: () => 'Tap your pay to change it.', p: 'Pay and what was left from last month go in at the top. The dotted underline means you can tap it.', tr: 'Dotted line = tappable' },
+    { t: 'start', tag: 'Plan vs real', h: () => 'Starting spare is the plan.', p: 'Starting spare is pay minus bills and pots, the plan for the month. Actual spare is what is really left today.', tr: '£766.27 planned · £1,209.57 now' },
+    { t: 'zopa', tag: 'Credit card', h: () => 'Your credit card, kept apart.', p: 'Type what goes on the card. It shows how much of the limit is used and what is free. It never muddles your spare cash.', tr: '9% of £500 used' },
+    { t: 'spend', tag: 'Spends', h: () => 'Add a spend in two taps.', p: 'Amount, a name, Add. Mark it Paid, or Upcoming if it has not gone out yet. Upcoming spends still count against spare.', tr: 'Paid · Upcoming' },
+    { t: 'pots', sub: '[data-t="fuel"]', tag: 'Pots', h: n => `Pots keep you honest, ${n}.`, p: 'Give a category a monthly amount, like Fuel £150. Spends in that category fill the pot. Go over and it comes off spare.', tr: 'Fuel: £90.00 left' },
+    { t: 'bills', tag: 'Bills', h: () => 'Bills go green once they go out.', p: 'Every bill has a due day. Once that day has gone it turns green with a tick. Check your bank app that it really left.', tr: 'Rent ✓ went out on the 28th' },
+    { t: 'menu', tag: 'Bell & settings', h: () => 'A nudge, never noise.', p: 'The bell groups bills due on the same day and reminds you to back up. Settings holds your Google Drive backup and the lock.', tr: '3 reminders' },
+    { t: 'lock', tag: 'Locked to you', h: n => `Only you get in, ${n}.`, p: 'Your money stays in this phone’s browser, locked with your fingerprint. Press and hold to finish the tour.', tr: 'Press and hold the fingerprint' },
+  ];
+  let i = -1, typing = null, autoT = null, voice = false;
+  const stage = $('stage'), hud = $('hud'), panel = $('panel');
+
+  // pips
+  STEPS.forEach((s, k) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Stop ' + (k + 1) + ': ' + s.tag); b.onclick = () => go(k); $('pips').appendChild(b); });
+
+  function target(s) {
+    if (s.t === 'lock') return $('fp');
+    const el = document.querySelector(`[data-t="${s.t}"]`);
+    return s.sub ? el.querySelector(s.sub) : el;
+  }
+  function place(s) {
+    // panel left or right of the phone (desktop); below it on small screens
+    const wide = innerWidth > 980, pr = $('phone').getBoundingClientRect(), cr = $('center').getBoundingClientRect(), tr = target(s).getBoundingClientRect();
+    if (wide) {
+      const right = ['spare', 'start', 'zopa', 'pots', 'lock'].includes(s.t) && !s.sub;
+      const x = right ? pr.right - cr.left + 90 : pr.left - cr.left - 90 - panel.offsetWidth;
+      const y = Math.min(Math.max(tr.top - cr.top - 30, 10), cr.height - panel.offsetHeight - 10);
+      panel.style.left = Math.max(0, Math.min(x, cr.width - panel.offsetWidth)) + 'px'; panel.style.top = y + 'px';
+    }
+    draw(s);
+  }
+  function draw(s) {
+    const sr = stage.getBoundingClientRect(), tr = target(s).getBoundingClientRect(), pr = panel.getBoundingClientRect();
+    const tx = tr.left - sr.left, ty = tr.top - sr.top, tw = tr.width, th = tr.height;
+    const tcx = tx + tw / 2, tcy = ty + th / 2;
+    let ax, ay, bx, by;
+    if (innerWidth > 980) {
+      const panelRight = pr.left - sr.left > tcx;
+      ax = panelRight ? pr.left - sr.left : pr.right - sr.left; ay = pr.top - sr.top + 26;
+      bx = panelRight ? tx + tw : tx; by = Math.min(Math.max(ay, ty + 12), ty + th - 12);
+      const ex = ax + (bx - ax) * 0.4;
+      var d = `M${ax},${ay} L${ex},${ay} L${ex + (by - ay > 0 ? 1 : -1) * 0},${by} L${bx},${by}`;
+      d = `M${ax},${ay} L${ex},${ay} L${ex + Math.sign(bx - ax) * Math.abs(by - ay) * .6},${by} L${bx},${by}`;
+    } else {
+      ax = pr.left - sr.left + 30; ay = pr.top - sr.top; bx = tcx; by = ty + th;
+      d = `M${ax},${ay} L${ax},${ay - 16} L${bx},${by + 16} L${bx},${by}`;
+    }
+    const r = Math.max(tw, th) / 2;
+    const small = (s.sub || s.t === 'lock') && tw < 140;
+    const rr = small ? r + 12 : 18;
+    const rcx = small ? tcx : bx, rcy = small ? tcy : by;
+    hud.innerHTML = `<path class="lead" d="${d}"/><circle class="dotend" cx="${ax}" cy="${ay}" r="3.5"/>
+      <g class="ret"><circle cx="${rcx}" cy="${rcy}" r="${rr}" stroke-width="1.5" class="spinr" stroke-dasharray="6 6"/>
+      <circle cx="${rcx}" cy="${rcy}" r="${rr + 7}" stroke-width="1" opacity=".5"/>
+      <path d="M${rcx - rr - 12},${rcy}h8M${rcx + rr + 4},${rcy}h8M${rcx},${rcy - rr - 12}v8M${rcx},${rcy + rr + 4}v8" stroke-width="1.5"/></g>`;
+    const lead = hud.querySelector('.lead'), len = lead.getTotalLength();
+    lead.style.setProperty('--len', len);
+    if (!reduce) { lead.classList.add('draw'); }
+    requestAnimationFrame(() => hud.querySelector('.ret').classList.add('on'));
+  }
+  function type(el, text) {
+    clearInterval(typing); el.innerHTML = '';
+    if (reduce) { el.textContent = text; return; }
+    let k = 0; const span = document.createElement('span'), cur = document.createElement('span'); cur.className = 'cur';
+    el.append(span, cur);
+    typing = setInterval(() => { span.textContent = text.slice(0, ++k); if (k >= text.length) { clearInterval(typing); setTimeout(() => cur.remove(), 900); } }, 34);
+  }
+  function say(text) { if (!voice) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-GB'; u.rate = 1.02; speechSynthesis.speak(u); } catch (e) {} }
+
+  // the app is taller than the screen: slide it so the part is in view, with a thumb print swiping the glass
+  let off = 0, stepT = null;
+  function scrollFor(s) {
+    if (s.t === 'lock') return false;
+    const app = $('app'), scr = $('screen'), el = target(s);
+    const visH = scr.clientHeight - 28, ar = app.getBoundingClientRect(), er = el.getBoundingClientRect();
+    const top = er.top - ar.top, maxOff = Math.max(0, app.offsetHeight - visH);
+    let want = off;
+    if (top - off < 10 || top + er.height - off > visH - 20 || top - off > visH * .5) want = Math.min(maxOff, Math.max(0, top - 70));
+    if (['spare', 'menu', 'rows'].includes(s.t)) want = 0;
+    if (Math.abs(want - off) < 4) return false;
+    const dn = want > off, H = scr.clientHeight; off = want;
+    app.style.transform = `translateY(${-off}px)`;
+    if (window.Hand) Hand.print(scr, { y0: dn ? H * .78 : H * .3, y1: dn ? H * .3 : H * .78, dur: 1000, dx: dn ? -14 : 10 });
+    return true;
+  }
+  function go(k) {
+    if (k < 0 || k >= STEPS.length) return;
+    i = k; const s = STEPS[k];
+    document.querySelectorAll('.lit').forEach(e => e.classList.remove('lit'));
+    $('app').classList.add('dim');
+    const lockOn = s.t === 'lock'; $('lock').classList.toggle('on', lockOn);
+    if (!lockOn) { const el = document.querySelector(`[data-t="${s.t}"]`); el.classList.add('lit');
+      if (s.t === 'rows' || s.t === 'start') el.closest('.c').classList.add('lit'); }
+    const sc = $('scan'); sc.classList.remove('go'); void sc.offsetWidth; sc.classList.add('go');
+    panel.classList.remove('on'); hud.innerHTML = '';
+    $('pstep').textContent = String(k + 1).padStart(2, '0') + ' / ' + String(STEPS.length).padStart(2, '0');
+    $('ptag').textContent = s.tag; $('ptitle').textContent = s.h(NAME); $('ptry').textContent = '▸ ' + s.tr;
+    $('pips').querySelectorAll('button').forEach((b, n) => { b.classList.toggle('on', n === k); if (n < k) b.classList.add('seen'); });
+    $('back').disabled = k === 0; $('next').textContent = k === STEPS.length - 1 ? 'Finish' : 'Next';
+    const moved = scrollFor(s);
+    clearTimeout(stepT);
+    stepT = setTimeout(() => { panel.classList.add('on'); place(s); type($('ptext'), s.p); say(s.h(NAME) + ' ' + s.p); }, reduce ? 0 : moved ? 1000 : 280);
+    $('sysline').textContent = 'Online · stop ' + (k + 1);
+    clearTimeout(autoT);
+    if ($('auto').getAttribute('aria-pressed') === 'true' && k < STEPS.length - 1) autoT = setTimeout(() => go(k + 1), 6500);
+  }
+  $('next').onclick = () => { if (i === STEPS.length - 1) finish(); else go(i + 1); };
+  $('back').onclick = () => go(i - 1);
+  $('auto').onclick = () => { const on = $('auto').getAttribute('aria-pressed') !== 'true'; $('auto').setAttribute('aria-pressed', on); if (on && i < STEPS.length - 1) autoT = setTimeout(() => go(i + 1), 2500); else clearTimeout(autoT); };
+  $('voice').onclick = () => { voice = $('voice').getAttribute('aria-pressed') !== 'true'; $('voice').setAttribute('aria-pressed', voice); if (!voice) try { speechSynthesis.cancel(); } catch (e) {} else say(STEPS[i].h(NAME)); };
+  addEventListener('keydown', e => { if ($('gate').classList.contains('off')) { if (e.key === 'ArrowRight') $('next').click(); if (e.key === 'ArrowLeft') go(i - 1); } });
+  addEventListener('resize', () => { if (i >= 0) place(STEPS[i]); });
+
+  function finish() {
+    clearTimeout(autoT); document.querySelectorAll('.lit').forEach(e => e.classList.remove('lit'));
+    $('app').classList.remove('dim'); $('lock').classList.remove('on'); hud.innerHTML = '';
+    $('ptitle').textContent = `You're all set, ${NAME}.`; $('ptag').textContent = 'Done'; $('ptry').textContent = '▸ Replay any stop with the bars below';
+    type($('ptext'), 'That is Lite: one number to watch, payday to payday. Open the demo to try it with example money.');
+    say(`You're all set, ${NAME}.`); $('sysline').textContent = 'Online · tour complete';
+  }
+
+  // fingerprint on the last stop
+  const fp = $('fp'), arc = $('fparc'); let hold = null;
+  fp.addEventListener('pointerdown', e => { e.preventDefault(); arc.style.transition = 'stroke-dashoffset .8s linear'; arc.style.strokeDashoffset = 0; $('fpmsg').textContent = 'Keep holding…';
+    hold = setTimeout(() => { hold = null; fp.classList.add('ok'); $('fpmsg').textContent = 'Welcome in'; setTimeout(() => { fp.classList.remove('ok'); arc.style.transition = 'none'; arc.style.strokeDashoffset = 258; $('fpmsg').textContent = 'Press and hold'; finish(); }, 900); }, 800); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => fp.addEventListener(ev, () => { if (hold) { clearTimeout(hold); hold = null; arc.style.transition = 'stroke-dashoffset .25s'; arc.style.strokeDashoffset = 258; $('fpmsg').textContent = 'Hold a little longer'; } }));
+  fp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); finish(); } });
+
+  // gate → boot → stop 1
+  $('gform').onsubmit = e => { e.preventDefault();
+    NAME = ($('gname').value.trim() || 'there').replace(/[<>]/g, '').slice(0, 20);
+    $('lockhi').textContent = `Hi ${NAME} 👋`;
+    const lines = ['Loading your month…', 'Bills · 9 found', 'Pots · 3 found', 'Spare cash · ready', `Hello, ${NAME}.`];
+    let k = 0; const log = $('bootlog'); log.innerHTML = '';
+    const tick = () => { if (k < lines.length) { log.innerHTML += '› ' + lines[k++] + '<br>'; setTimeout(tick, reduce ? 0 : 260); } else boot(); };
+    tick();
+  };
+  function boot() {
+    $('gate').classList.add('off'); stage.classList.add('on'); $('sysline').textContent = 'Online';
+    setTimeout(() => { stage.classList.remove('boot'); const sc = $('scan'); sc.classList.add('go'); }, reduce ? 0 : 300);
+    $('controls').hidden = false;
+    setTimeout(() => go(0), reduce ? 0 : 1300);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Where's My Money? Lite</title>
+<meta name="description" content="Where's My Money? Lite: see what's spare, payday to payday. No bank login, your money stays on your phone.">
+<link rel="icon" href="lite-192.png">
+<meta name="theme-color" content="#0f1513">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: a dark stage. Words + wake-style controls left, one phone right that wakes when you unlock it; a storyboard (motion notes) underneath. */
+:root {
+  --bg: #0b100e; --stage: #0f1513; --card: #171f1c; --text: #e9f0ed; --muted: #93a39d; --border: #26332f; --row: #1d2724;
+  --accent: #3fd0a4; --on-accent: #06221b; --good: #3fd0a4; --bad: #f07a6a;
+  --bill: #7fb0ff; --spend: #f2b632; --pot: #f59a4a; --spare: #3fd0a4; --ring-bg: #26332f;
+  --zused: #e06cd8; --zfree: #6b5a9e; --zfreetext: #a99ad6;
+  --glass: #030504; --phone: #050807; --glow: rgba(63,208,164,.18);
+  --display: "Bricolage Grotesque", "Manrope", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.2,.8,.2,1);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #e8eeeb; --stage: #f3f5f4; --card: #ffffff; --text: #14201c; --muted: #5d6b66; --border: #dde3e0; --row: #eef2f0;
+  --accent: #0f6e5c; --on-accent: #ffffff; --good: #138a5e; --bad: #c8463a;
+  --bill: #2f6fd0; --spend: #b07d00; --pot: #e0701b; --spare: #13a07a; --ring-bg: #dde3e0;
+  --zused: #b53aab; --zfree: #c3b6ea; --zfreetext: #6b5a9e;
+  --glass: #030504; --phone: #14201c; --glow: rgba(15,110,92,.16);
+  color-scheme: light } }
+:root[data-theme="light"] {
+  --bg: #e8eeeb; --stage: #f3f5f4; --card: #ffffff; --text: #14201c; --muted: #5d6b66; --border: #dde3e0; --row: #eef2f0;
+  --accent: #0f6e5c; --on-accent: #ffffff; --good: #138a5e; --bad: #c8463a;
+  --bill: #2f6fd0; --spend: #b07d00; --pot: #e0701b; --spare: #13a07a; --ring-bg: #dde3e0;
+  --zused: #b53aab; --zfree: #c3b6ea; --zfreetext: #6b5a9e;
+  --glass: #030504; --phone: #14201c; --glow: rgba(15,110,92,.16);
+  color-scheme: light }
+
+* { box-sizing: border-box; }
+html { overflow-x: clip; }
+body { background: var(--bg); color: var(--text); font: 16px/1.55 var(--body); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1140px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 56px; align-items: center; padding-block: 48px 64px; }
+.copy { display: grid; gap: 22px; align-content: center; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.brand img { width: 32px; height: 32px; border-radius: 9px; }
+.hl { position: relative; min-height: 2.1em; font: 800 clamp(42px, 6vw, 76px)/1 var(--display); letter-spacing: -.025em; margin: 0; }
+.hl span { position: absolute; inset: 0 auto auto 0; transition: opacity .7s var(--ease), transform .7s var(--ease), filter .7s; text-wrap: balance; }
+.hl .b { color: var(--accent); opacity: 0; transform: translateY(18px); filter: blur(6px); }
+.awake .hl .a { opacity: 0; transform: translateY(-18px); filter: blur(6px); }
+.awake .hl .b { opacity: 1; transform: none; filter: none; }
+.sub { color: var(--muted); font-size: 18px; max-width: 30em; margin: 0; min-height: 3.2em; }
+.styles { display: grid; gap: 8px; }
+.styles .lbl { font-size: 13px; font-weight: 700; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 4px; width: fit-content; max-width: 100%; }
+.seg button { border: 0; background: none; border-radius: 12px; padding: 8px 13px; font-size: 14px; font-weight: 700; color: var(--muted); transition: background .25s, color .25s; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { border: 1.5px solid var(--border); background: transparent; border-radius: 14px; padding: 12px 18px; font-weight: 800; transition: transform .15s var(--ease); }
+.btn:active { transform: scale(.97); }
+a.btn { color: var(--text); text-decoration: none; display: inline-block; }
+.btn.pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+
+/* the phone */
+.stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; perspective: 1400px; }
+.stage::before { content: ""; position: absolute; top: 12%; width: 110%; max-width: 480px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, var(--glow), transparent 64%); opacity: .35; transition: opacity 1.2s var(--ease); }
+.awake .stage::before, .woke .stage::before { opacity: 1; }
+.phone { position: relative; width: 360px; max-width: 100%; background: var(--phone); border-radius: 50px; padding: 10px;
+  box-shadow: 0 40px 80px rgba(0,0,0,.45), inset 0 0 0 1.5px rgba(255,255,255,.07);
+  transform-style: preserve-3d; transition: transform 1.1s var(--ease); }
+.phone.flat { transform: rotateX(58deg) translateY(60px) scale(.88); }
+.phone.shake { animation: shake .26s linear; }
+@keyframes shake { 20% { translate: -3px 0; } 40% { translate: 3px 0; } 60% { translate: -2px 0; } 80% { translate: 2px 0; } }
+.screen { position: relative; height: 700px; border-radius: 41px; overflow: hidden; background: var(--glass); touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 20;
+  background: linear-gradient(125deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 32%, rgba(255,255,255,0) 70%, rgba(255,255,255,.04) 100%); }
+.island { position: absolute; top: 10px; left: 50%; translate: -50% 0; width: 92px; height: 26px; border-radius: 99px; background: #000; z-index: 15; }
+
+/* layers */
+.layer { position: absolute; inset: 0; transition: opacity .6s var(--ease), transform .6s var(--ease), filter .6s; }
+.sleep { display: grid; justify-items: center; align-content: start; padding-top: 120px; color: #cfd8d4; }
+.sleep .clock { font: 300 68px/1 var(--body); letter-spacing: -.02em; opacity: .26; }
+.sleep .date { font-size: 15px; font-weight: 600; opacity: .22; margin-top: 8px; }
+.lock { opacity: 0; display: grid; justify-items: center; align-content: start; padding-top: 110px; text-align: center;
+  background: radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--accent) 22%, #0b1210), #0b1210 60%); color: #e9f0ed; }
+.lock .clock { font: 300 68px/1 var(--body); letter-spacing: -.02em; }
+.lock .date { font-size: 15px; font-weight: 600; color: #a9b8b2; margin-top: 8px; }
+.lock .hi { margin-top: 120px; font: 800 30px/1.1 var(--display); opacity: 0; transform: translateY(10px); transition: .7s var(--ease) .25s; }
+.lock .tag { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 10px; font-weight: 700; color: #3fd0a4; opacity: 0; transition: .7s var(--ease) .45s; }
+.lock .tag img { width: 22px; height: 22px; border-radius: 6px; }
+.p-lock .lock { opacity: 1; }
+.p-lock .lock .hi, .p-lock .lock .tag, .p-app .lock .hi, .p-app .lock .tag { opacity: 1; transform: none; }
+.p-lock .sleep, .p-app .sleep { opacity: 0; }
+.p-app .lock { opacity: 0; transform: translateY(-40px) scale(1.04); filter: blur(4px); pointer-events: none; }
+
+/* fingerprint pad (in-screen sensor) */
+.pad { position: absolute; left: 50%; bottom: 74px; translate: -50% 0; width: 84px; height: 84px; border-radius: 50%; border: 0; background: none; color: #3fd0a4; z-index: 12;
+  display: grid; place-items: center; touch-action: none; transition: opacity .4s; }
+.pad::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; background: radial-gradient(circle, rgba(63,208,164,.28), rgba(63,208,164,0) 70%); animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.18); opacity: .5; } }
+.pad svg.fp { position: relative; filter: drop-shadow(0 0 8px rgba(63,208,164,.7)); }
+.pad svg.arc { position: absolute; inset: 0; transform: rotate(-90deg); }
+.pad svg.arc circle { fill: none; stroke: #3fd0a4; stroke-width: 3.5; stroke-linecap: round; stroke-dasharray: 251; stroke-dashoffset: 251; }
+.pad.holding svg.arc circle { stroke-dashoffset: 0; transition: stroke-dashoffset .9s linear; }
+.pad.done svg.arc circle { stroke-dashoffset: 0; }
+.pad.hide, .p-lock .pad, .p-app .pad { opacity: 0; pointer-events: none; }
+.padhint { position: absolute; left: 0; right: 0; bottom: 36px; text-align: center; font-size: 12px; font-weight: 700; color: #3fd0a4; opacity: .7; z-index: 12; transition: opacity .4s; }
+.p-lock .padhint, .p-app .padhint { opacity: 0; }
+.ripple { position: absolute; width: 84px; height: 84px; border-radius: 50%; border: 2px solid #3fd0a4; pointer-events: none; z-index: 11; translate: -50% -50%; animation: ripple 1s var(--ease) forwards; }
+@keyframes ripple { from { transform: scale(.6); opacity: .9; } to { transform: scale(4.2); opacity: 0; } }
+.tapdot { position: absolute; width: 46px; height: 46px; border-radius: 50%; background: rgba(63,208,164,.35); translate: -50% -50%; pointer-events: none; z-index: 11; animation: tap .5s var(--ease) forwards; }
+@keyframes tap { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+.thumb { position: absolute; right: -150px; bottom: -260px; width: 170px; z-index: 13; pointer-events: none; opacity: 0; }
+.thumb.go { animation: thumb 2.3s var(--ease) forwards; }
+@keyframes thumb {
+  0% { opacity: 0; transform: translate(60px, 80px) rotate(-18deg); }
+  25% { opacity: 1; transform: translate(-112px, -132px) rotate(-26deg); }
+  32%, 66% { opacity: 1; transform: translate(-112px, -126px) rotate(-26deg) scale(.97); }
+  100% { opacity: 0; transform: translate(40px, 60px) rotate(-14deg); } }
+
+/* the app (Darren's real layout) */
+.app { opacity: 0; background: var(--stage); color: var(--text); padding: 44px 12px 16px; overflow: hidden; pointer-events: none; }
+.p-app .app { opacity: 1; }
+.app .bit { opacity: 0; transform: translateY(14px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+.app .bit.in { opacity: 1; transform: none; }
+.ahead { display: flex; gap: 10px; align-items: flex-start; padding: 2px 2px 10px; }
+.ahead img { width: 42px; height: 42px; border-radius: 11px; }
+.ahead .nm { font: 800 18px/1.15 var(--body); }
+.ahead .tg { font-size: 12px; font-weight: 700; color: var(--accent); }
+.aside { margin-left: auto; display: grid; justify-items: end; gap: 6px; }
+.setb { border: 1px solid var(--border); background: var(--card); border-radius: 11px; padding: 5px 9px; font-size: 11px; font-weight: 700; }
+.vrow { display: flex; gap: 6px; align-items: center; font-size: 10px; color: var(--muted); }
+.bell { position: relative; width: 26px; height: 24px; border: 1px solid var(--border); background: var(--card); border-radius: 8px; display: grid; place-items: center; color: var(--spend); }
+.bell b { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; border-radius: 99px; background: var(--bad); color: #fff; font-size: 9px; line-height: 16px; text-align: center; }
+.tabl { border-top: 1px solid var(--border); margin: 0 2px 10px; height: 0; }
+.c { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 15px; margin-bottom: 10px; }
+.lbl2 { font-size: 10px; font-weight: 800; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
+.sthead { display: flex; justify-content: space-between; gap: 10px; }
+.big { font: 800 36px/1.05 var(--body); letter-spacing: -.02em; color: var(--accent); margin: 4px 0 6px; }
+.key { font-size: 10px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0 6px; }
+.key span { white-space: nowrap; display: inline-flex; align-items: center; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; flex: none; }
+.dot.bill { background: var(--bill); } .dot.pot { background: var(--pot); } .dot.spend { background: var(--spend); } .dot.spare { background: var(--spare); }
+.dot.zused { background: var(--zused); } .dot.zfree { background: var(--zfree); }
+.ring { width: 88px; height: 88px; flex: none; }
+.ring circle { fill: none; stroke-width: 10; }
+.ring .bg { stroke: var(--ring-bg); } .ring .sb { stroke: var(--bill); } .ring .sp { stroke: var(--pot); } .ring .ss { stroke: var(--spend); } .ring .sf { stroke: var(--spare); }
+.ring text, .zring text { fill: var(--text); font: 800 18px var(--body); }
+.strows { margin-top: 10px; font-size: 13px; }
+.strows .r { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px dashed var(--border); color: var(--muted); }
+.strows .r b { color: var(--text); }
+.strows .r .u { color: var(--text); font-weight: 700; border-bottom: 2px dotted var(--muted); }
+.strows .r b.k-bill { color: var(--bill); } .strows .r b.k-spend { color: var(--spend); } .strows .r b.k-pot { color: var(--pot); }
+.strows .r.line { border-top: 2px solid var(--text); padding: 0; margin-top: 4px; }
+.strows .r.tot { color: var(--text); font-weight: 800; border-top: 0; }
+.zc { display: flex; justify-content: space-between; align-items: center; }
+.zrow { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.zrow b { color: var(--text); margin-left: 8px; } .zrow b.f { color: var(--zfreetext); }
+.zc small { font-size: 10px; color: var(--muted); display: block; margin-top: 6px; }
+.zring { width: 82px; height: 82px; flex: none; }
+.zring circle { fill: none; stroke-width: 9; } .zring .zf { stroke: var(--zfree); } .zring .zu { stroke: var(--zused); }
+.zring text.s { font: 600 9px var(--body); fill: var(--muted); }
+.fold { display: flex; align-items: center; gap: 0; font: 800 16px var(--body); padding: 14px 15px; }
+.fold .dot { width: 8px; height: 8px; margin-right: 8px; }
+.fold svg { margin-left: auto; color: var(--muted); }
+.fold.s { color: var(--spend); } .fold.s .dot { background: var(--spend); }
+.fold.p { color: var(--pot); } .fold.p .dot { background: var(--pot); }
+.fold.k { color: var(--zused); } .fold.k .dot { background: var(--zused); }
+.fold.b { color: var(--bill); } .fold.b .dot { background: var(--bill); }
+
+/* storyboard */
+section.notes { border-top: 1px solid var(--border); padding-block: 48px 72px; }
+.nhead { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.nhead h2 { font: 800 clamp(28px, 3.6vw, 40px)/1.05 var(--display); letter-spacing: -.02em; margin: 0; }
+.nhead p { margin: 6px 0 0; color: var(--muted); max-width: 40em; }
+.beats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.beat { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: grid; gap: 6px; align-content: start; transition: border-color .3s, transform .3s var(--ease), background .3s; }
+.beat .t { font-size: 12px; font-weight: 800; color: var(--muted); }
+.beat b { font-size: 15px; }
+.beat p { margin: 0; font-size: 13px; color: var(--muted); }
+.beat .bar { height: 3px; border-radius: 99px; background: var(--row); overflow: hidden; }
+.beat .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+.beat.now { border-color: var(--accent); transform: translateY(-3px); }
+.beat.now .t { color: var(--accent); }
+.beat.done .bar i { width: 100%; }
+.copied { font-size: 13px; color: var(--accent); font-weight: 700; min-height: 1.4em; }
+textarea.fallback { width: 100%; height: 160px; margin-top: 10px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 10px; font: 12px/1.5 var(--body); }
+
+/* chapter cards (replace the old motion notes) */
+section.chapters { border-top: 1px solid var(--border); padding-block: 56px 64px; }
+.chapters h2 { font: 800 clamp(30px, 4vw, 44px)/1.05 var(--display); letter-spacing: -.02em; margin: 0; }
+.chlead { color: var(--muted); margin: 8px 0 26px; }
+.chgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.chc { position: relative; display: grid; gap: 6px; align-content: start; padding: 20px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); color: var(--text); text-decoration: none;
+  transition: transform .25s var(--ease), border-color .25s; }
+.chc:hover { transform: translateY(-4px); border-color: var(--accent); }
+.chc .ci { font-size: 28px; }
+.chc small { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: .04em; }
+.chc b { font-size: 19px; }
+.chc p { margin: 0; color: var(--muted); font-size: 14px; }
+.chc i { font-style: normal; position: absolute; top: 18px; right: 20px; color: var(--muted); transition: transform .25s var(--ease), color .25s; }
+.chc:hover i { transform: translateX(4px); color: var(--accent); }
+/* the hand: hidden while the phone lies flat (lift style) and while the old thumb plays (thumb style) */
+.inhand svg.hand-back, .inhand svg.hand-front, .inhand .handshadow { transition: opacity .6s var(--ease); }
+.inhand:has(.phone.flat) svg.hand-back, .inhand:has(.phone.flat) svg.hand-front, .inhand:has(.phone.flat) .handshadow { opacity: 0; }
+.inhand.thumbing .hand-front .hthumb { opacity: 0; transition: opacity .3s; }
+.inhand .hand-front .hthumb { transition: opacity .4s .3s, transform .35s var(--ease); }
+.stage { padding-bottom: 40px; }
+@media (max-width: 960px) { .chgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) {
+  .hl { min-height: 3.15em; }
+  .chgrid { grid-template-columns: minmax(0, 1fr); }
+  .stage .inhand { width: 300px; max-width: 82%; translate: -14px 0; }
+  .stage .phone { width: 100%; }
+}
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-block: 28px 48px; }
+  .beats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .screen { height: 640px; }
+  .sleep, .lock { padding-top: 96px; }
+  .lock .hi { margin-top: 96px; }
+  .beats { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transition-delay: 0s !important; } }
+</style>
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-page="home">
+<main id="page">
+  <div class="wrap hero">
+    <div class="copy">
+      <div class="brand"><img src="lite-192.png" alt="">Where's My Money? · Lite</div>
+      <h1 class="hl" aria-live="polite"><span class="a">Your money. Asleep until you need it.</span><span class="b">Payday to payday.</span></h1>
+      <p class="sub" id="sub">Press and hold the glowing pad to wake the phone.</p>
+      <div class="styles">
+        <span class="lbl" id="stylelbl">Wake style</span>
+        <div class="seg" role="group" aria-labelledby="stylelbl" id="styleseg">
+          <button type="button" data-s="finger" aria-pressed="true">Fingerprint</button>
+          <button type="button" data-s="thumb" aria-pressed="false">Thumb</button>
+          <button type="button" data-s="tap" aria-pressed="false">Tap to wake</button>
+          <button type="button" data-s="lift" aria-pressed="false">Lift to wake</button>
+        </div>
+      </div>
+      <div class="acts">
+        <button type="button" class="btn pri" id="play">Wake it</button>
+        <button type="button" class="btn" id="replay">Replay</button>
+        <a class="btn ghost" href="https://df-ai-lab.github.io/wheres-my-money-lite/" target="_blank" rel="noopener">Get the app</a>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="phone" id="phone">
+        <div class="screen" id="screen" tabindex="0" aria-label="Phone screen">
+          <div class="island"></div>
+          <div class="layer sleep" aria-hidden="true"><div class="clock">08:42</div><div class="date">Thu 28 Oct</div></div>
+          <div class="layer lock" aria-hidden="true">
+            <div class="clock">08:42</div><div class="date">Thu 28 Oct</div>
+            <div class="hi">Hi Darren 👋</div>
+            <div class="tag"><img src="lite-192.png" alt="">Where's My Money? · Lite</div>
+          </div>
+          <div class="layer app" id="app" aria-hidden="true">
+            <div class="ahead bit">
+              <img src="lite-192.png" alt="">
+              <div><div class="nm">Where's My Money?</div><div class="tg">Payday to payday · Lite</div></div>
+              <div class="aside"><span class="setb">⚙ Settings</span>
+                <div class="vrow"><span class="bell">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><b>10</b></span>demo.v0.59</div>
+              </div>
+            </div>
+            <div class="tabl bit"></div>
+            <div class="c bit" id="stc">
+              <div class="sthead">
+                <div>
+                  <div class="lbl2">Spare cash left ⓘ</div>
+                  <div class="big" id="big">£0.00</div>
+                  <div class="key"><span><i class="dot bill"></i>Bills 47%</span>·<span><i class="dot pot"></i>Pots 2%</span>·<span><i class="dot spend"></i>Spends 2%</span>·<span><i class="dot spare"></i>Spare 48%</span></div>
+                </div>
+                <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle cx="50" cy="50" r="40" class="bg"/>
+                  <circle cx="50" cy="50" r="40" class="sb" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" class="sp" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" class="ss" transform="rotate(-90 50 50)"/>
+                  <circle cx="50" cy="50" r="40" class="sf" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="57" text-anchor="middle" id="pc">0%</text>
+                </svg>
+              </div>
+              <div class="strows">
+                <div class="r bit"><span>Pay</span><span class="u">£2,500.00</span></div>
+                <div class="r bit"><span>+ Left from last month</span><span class="u">Add</span></div>
+                <div class="r bit"><span><i class="dot bill"></i>− Bills</span><b class="k-bill">£1,183.73</b></div>
+                <div class="r bit"><span><i class="dot spend"></i>− Spends ⓘ</span><b class="k-spend">£46.70</b></div>
+                <div class="r bit"><span><i class="dot pot"></i>Pots left ⓘ</span><b class="k-pot">£490.00</b></div>
+                <div class="r line bit"></div>
+                <div class="r tot bit"><span>Starting spare</span><span>£766.27</span></div>
+                <div class="r tot bit"><span>Actual spare</span><span>£1,209.57</span></div>
+              </div>
+            </div>
+            <div class="c bit">
+              <div class="zc">
+                <div><div class="lbl2">Zopa credit card</div>
+                  <div class="zrow"><i class="dot zused"></i>Used<b>£45.00</b></div>
+                  <div class="zrow"><i class="dot zfree"></i>Free<b class="f">£455.00</b></div>
+                  <small>Limit £500.00</small></div>
+                <svg class="zring" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle cx="50" cy="50" r="40" class="zf"/>
+                  <circle cx="50" cy="50" r="40" class="zu" id="zu" transform="rotate(-90 50 50)"/>
+                  <text x="50" y="54" text-anchor="middle">9%</text><text x="50" y="68" text-anchor="middle" class="s">used</text>
+                </svg>
+              </div>
+            </div>
+            <div class="c fold s bit"><i class="dot"></i>Add a spend<svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="c fold p bit"><i class="dot"></i>Monthly pots<svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="c fold k bit"><i class="dot"></i>Credit card<svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="c fold b bit"><i class="dot"></i>Bills (every month)<svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+
+          <button type="button" class="pad" id="pad" aria-label="Press and hold to unlock">
+            <svg class="arc" viewBox="0 0 84 84"><circle cx="42" cy="42" r="40"/></svg>
+            <svg class="fp" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 4a7 7 0 0 0-7 7v2"/><path d="M19 13v-2a7 7 0 0 0-3-5.7"/><path d="M8.5 20c.9-1.6 1.5-3.6 1.5-6v-3a2 2 0 0 1 4 0v3"/><path d="M14 17.5c-.2 1-.5 2-1 3"/><path d="M17 15c0 1.5-.2 2.8-.6 4"/><path d="M7 15.5c0 1-.2 2-.5 2.8"/></svg>
+          </button>
+          <div class="padhint" id="padhint">Press and hold</div>
+          <svg class="thumb" id="thumb" viewBox="0 0 170 300" aria-hidden="true">
+            <defs><linearGradient id="skin" x1="0" x2="1"><stop offset="0" stop-color="#d9a37f"/><stop offset="1" stop-color="#b97f5c"/></linearGradient></defs>
+            <path d="M40 300 L40 90 Q40 20 85 20 Q130 20 130 90 L130 300 Z" fill="url(#skin)"/>
+            <path d="M58 70 Q58 36 85 36 Q112 36 112 70 L112 92 Q85 102 58 92 Z" fill="#f1d3bf" opacity=".85"/>
+            <path d="M48 170 Q85 182 122 170" stroke="#a46e4e" stroke-width="2" fill="none" opacity=".5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="chapters">
+    <div class="wrap">
+      <h2>Have a look around</h2>
+      <p class="chlead">Four short stops. Each one is the real app, with example numbers.</p>
+      <div class="chgrid">
+        <a class="chc" href="tour.html"><span class="ci">🦾</span><small>2 · Tour</small><b>Meet every part</b><p>A guided tour. Lines lock on to each part and tell you what it does.</p><i>→</i></a>
+        <a class="chc" href="month.html"><span class="ci">📅</span><small>3 · Month</small><b>Scroll a month</b><p>Payday to payday in one scroll. Watch spare cash change day by day.</p><i>→</i></a>
+        <a class="chc" href="play.html"><span class="ci">🎮</span><small>4 · Play</small><b>Play with it</b><p>Add spends, set pots, tick bills. Nothing is saved, so break it all you like.</p><i>→</i></a>
+        <a class="chc" href="features.html"><span class="ci">📱</span><small>5 · Everything</small><b>Everything in Lite</b><p>The lock, the Google Drive backup, the bell and the whole month.</p><i>→</i></a>
+      </div>
+    </div>
+    <div hidden><button type="button" id="copy"></button><div id="copied"></div><ol id="beats"></ol><div id="fb"></div></div>
+  </section>
+</main>
+
+<script src="site.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const page = $('page'), phone = $('phone'), screen = $('screen'), pad = $('pad');
+  const C = 2 * Math.PI * 40;
+  const hand = window.Hand ? Hand.wrap(phone) : null;
+
+  // storyboard: [start ms, end ms, name, what happens]. Times are from the moment the unlock is accepted.
+  const BEATS = [
+    [-900, 0, 'Hold', 'Thumb rests on the glowing pad. A mint ring fills around it in 900 ms. The pad breathes slowly before that.'],
+    [0, 300, 'Accept', 'Tiny side-to-side shake (haptic). Three mint ripples spread out from the pad and fade.'],
+    [300, 1100, 'Lock screen', 'Glass lights up teal from the top. Clock sharpens. "Hi Darren 👋" rises in, then the Lite name and icon.'],
+    [1500, 1900, 'Into the app', 'Lock screen lifts away and blurs. The header slides up into place.'],
+    [1900, 2800, 'Spare cash', 'The spare card fades up. £0.00 rolls to £1,209.57 with an ease-out.'],
+    [2100, 3600, 'The ring', 'Ring draws in order: bills (blue), pots (orange), spends (gold), spare (mint). Each starts where the last ends.'],
+    [2500, 3500, 'Rows', 'Pay, Left, Bills, Spends, Pots left, Starting and Actual spare slide in, 80 ms apart.'],
+    [3400, 4600, 'Settle', 'Zopa card and its ring, then the four folded cards. Headline changes to "Payday to payday."'],
+  ];
+  const beats = $('beats');
+  BEATS.forEach(([a, b, n, d]) => beats.insertAdjacentHTML('beforeend',
+    `<li class="beat"><span class="t">${a < 0 ? 'before' : a + '–' + b + ' ms'}</span><b>${n}</b><p>${d}</p><span class="bar"><i></i></span></li>`));
+  const beatEls = [...beats.children];
+  const beatAt = (i, on) => { beatEls.forEach((el, k) => { el.classList.toggle('now', k === i && on); if (k < i) el.classList.add('done'); }); };
+
+  let style = 'finger', state = 'sleep', timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const clear = () => { timers.forEach(clearTimeout); timers = []; };
+  const SUB = {
+    finger: 'Press and hold the glowing pad to wake the phone.',
+    thumb: 'Press Wake it and watch a thumb unlock it.',
+    tap: 'Double-tap the glass to wake it.',
+    lift: 'The phone is lying flat. Press Wake it to lift it up.',
+  };
+  const HINT = { finger: 'Press and hold', thumb: 'Watch the thumb', tap: 'Double-tap', lift: 'Lift to wake' };
+
+  function ring(parts) {
+    let start = 0;
+    parts.forEach(([cls, p, dur]) => {
+      const el = document.querySelector('.ring .' + cls), len = p * C;
+      el.style.transition = dur ? `stroke-dasharray ${dur}ms cubic-bezier(.2,.8,.2,1)` : 'none';
+      el.setAttribute('stroke-dashoffset', -start * C);
+      el.setAttribute('stroke-dasharray', (dur === undefined ? '0' : (len > 3 ? len - 2 : len)) + ' ' + C);
+      start += p;
+    });
+  }
+  const SEG = [['sb', .4735], ['sp', .024], ['ss', .0187], ['sf', .4838]];
+  function resetApp() {
+    document.querySelectorAll('.app .bit').forEach(b => b.classList.remove('in'));
+    SEG.forEach(([c]) => { const el = document.querySelector('.ring .' + c); el.style.transition = 'none'; el.setAttribute('stroke-dasharray', '0 ' + C); });
+    $('zu').style.transition = 'none'; $('zu').setAttribute('stroke-dasharray', '0 ' + C);
+    $('big').textContent = '£0.00'; $('pc').textContent = '0%';
+  }
+  const fmt = n => '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function roll(el, to, d, f) { const t0 = performance.now();
+    const step = now => { const k = Math.min((now - t0) / d, 1), e = 1 - Math.pow(1 - k, 3); el.textContent = f(to * e); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step); }
+
+  function setState(s) { state = s; screen.classList.remove('p-sleep', 'p-lock', 'p-app'); screen.classList.add('p-' + s); }
+
+  function sleep() {
+    clear(); page.classList.remove('awake', 'woke'); setState('sleep'); resetApp();
+    pad.classList.remove('holding', 'done'); pad.classList.toggle('hide', style === 'tap' || style === 'lift');
+    $('padhint').textContent = HINT[style];
+    phone.classList.toggle('flat', style === 'lift');
+    $('thumb').classList.remove('go'); if (hand) hand.classList.remove('thumbing');
+    $('sub').textContent = SUB[style];
+    $('play').hidden = style === 'finger' || style === 'tap';
+    beatEls.forEach(b => b.classList.remove('now', 'done'));
+    if (style === 'finger') beatAt(0, true);
+  }
+
+  function woken() {   // the final state with no motion
+    clear(); setState('app'); page.classList.add('awake', 'woke'); phone.classList.remove('flat');
+    document.querySelectorAll('.app .bit').forEach(b => b.classList.add('in'));
+    let start = 0; SEG.forEach(([c, p]) => { const el = document.querySelector('.ring .' + c); el.style.transition = 'none';
+      el.setAttribute('stroke-dashoffset', -start * C); el.setAttribute('stroke-dasharray', (p * C > 3 ? p * C - 2 : p * C) + ' ' + C); start += p; });
+    $('zu').setAttribute('stroke-dasharray', (.09 * C - 1.5) + ' ' + C);
+    $('big').textContent = '£1,209.57'; $('pc').textContent = '48%';
+    beatEls.forEach(b => { b.classList.remove('now'); b.classList.add('done'); });
+    $('sub').textContent = 'Spare cash first. Everything else one tap away. Press Replay to see it again.';
+  }
+
+  function ripples(x, y) {
+    for (let i = 0; i < 3; i++) later(i * 160, () => { const r = document.createElement('span'); r.className = 'ripple';
+      r.style.left = x + 'px'; r.style.top = y + 'px'; screen.appendChild(r); setTimeout(() => r.remove(), 1100); });
+  }
+
+  // the orchestrated wake (times match BEATS)
+  function wake(x, y) {
+    if (state !== 'sleep') return;
+    if (reduce) return woken();
+    clear(); pad.classList.add('done');
+    if (navigator.vibrate) navigator.vibrate(25);
+    phone.classList.remove('shake'); void phone.offsetWidth; phone.classList.add('shake');
+    const sr = screen.getBoundingClientRect();
+    if (x === undefined) { const pr = pad.getBoundingClientRect(); x = pr.left + pr.width / 2 - sr.left; y = pr.top + pr.height / 2 - sr.top; }
+    ripples(x, y); beatAt(1, true); page.classList.add('woke');
+    later(300, () => { setState('lock'); beatAt(2, true); });
+    later(1500, () => { setState('app'); beatAt(3, true); document.querySelector('.ahead').classList.add('in'); document.querySelector('.tabl').classList.add('in'); });
+    later(1900, () => { beatAt(4, true); $('stc').classList.add('in'); roll($('big'), 1209.57, 900, fmt); });
+    later(2100, () => { beatAt(5, true);
+      let start = 0, t = 0; const durs = [500, 220, 200, 600];
+      SEG.forEach(([c, p], i) => { const s0 = start, at = t; later(at, () => { const el = document.querySelector('.ring .' + c);
+        el.setAttribute('stroke-dashoffset', -s0 * C); el.style.transition = `stroke-dasharray ${durs[i]}ms cubic-bezier(.2,.8,.2,1)`;
+        el.setAttribute('stroke-dasharray', (p * C > 3 ? p * C - 2 : p * C) + ' ' + C); }); start += p; t += durs[i]; });
+      roll($('pc'), 48, 1500, v => Math.round(v) + '%'); });
+    later(2500, () => { beatAt(6, true); document.querySelectorAll('.strows .bit').forEach((r, i) => later(i * 80, () => r.classList.add('in'))); });
+    later(3400, () => { beatAt(7, true); const cards = document.querySelectorAll('.app > .c.bit:not(#stc)');
+      cards.forEach((c, i) => later(i * 140, () => c.classList.add('in')));
+      later(250, () => { $('zu').style.transition = 'stroke-dasharray .6s cubic-bezier(.2,.8,.2,1)'; $('zu').setAttribute('stroke-dasharray', (.09 * C - 1.5) + ' ' + C); });
+      later(500, () => page.classList.add('awake')); });
+    later(4600, () => { beatEls.forEach(b => { b.classList.remove('now'); b.classList.add('done'); });
+      $('sub').textContent = 'Spare cash first. Everything else one tap away. Press Replay to see it again.'; });
+  }
+
+  // fingerprint: press and hold 900 ms
+  let hold = null;
+  const holdStart = e => { if (state !== 'sleep' || style === 'tap' || style === 'lift') return; if (e) e.preventDefault();
+    pad.classList.add('holding'); $('padhint').textContent = 'Keep holding…';
+    hold = setTimeout(() => { hold = null; pad.classList.remove('holding'); wake(); }, 900); };
+  const holdEnd = () => { if (hold) { clearTimeout(hold); hold = null; pad.classList.remove('holding'); $('padhint').textContent = 'Hold a little longer'; } };
+  pad.addEventListener('pointerdown', holdStart);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => pad.addEventListener(ev, holdEnd));
+  pad.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) holdStart(e); });
+  pad.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' ') holdEnd(); });
+
+  // tap to wake: two taps within 350 ms
+  let lastTap = 0;
+  screen.addEventListener('pointerdown', e => {
+    if (style !== 'tap' || state !== 'sleep') return;
+    const sr = screen.getBoundingClientRect(), x = e.clientX - sr.left, y = e.clientY - sr.top;
+    const d = document.createElement('span'); d.className = 'tapdot'; d.style.left = x + 'px'; d.style.top = y + 'px'; screen.appendChild(d); setTimeout(() => d.remove(), 600);
+    const now = performance.now(); if (now - lastTap < 350) { lastTap = 0; wake(x, y); } else lastTap = now;
+  });
+  screen.addEventListener('keydown', e => { if (style === 'tap' && (e.key === 'Enter' || e.key === ' ') && e.target === screen) { e.preventDefault(); wake(); } });
+
+  // Wake it: thumb and lift styles (and a shortcut for the others)
+  $('play').onclick = () => {
+    if (state !== 'sleep') sleep();
+    if (reduce) return woken();
+    if (style === 'thumb') { beatAt(0, true); if (hand) { hand.classList.add('thumbing'); setTimeout(() => hand.classList.remove('thumbing'), 2400); } const t = $('thumb'); t.classList.remove('go'); void t.offsetWidth; t.classList.add('go');
+      later(650, () => pad.classList.add('holding')); later(1550, () => { pad.classList.remove('holding'); wake(); }); }
+    else if (style === 'lift') { phone.classList.remove('flat'); later(1000, () => wake(undefined, undefined)); }
+    else wake();
+  };
+  $('replay').onclick = () => { sleep(); if (reduce) later(50, woken); };
+  document.querySelectorAll('#styleseg button').forEach(b => b.onclick = () => { style = b.dataset.s;
+    document.querySelectorAll('#styleseg button').forEach(x => x.setAttribute('aria-pressed', x === b)); sleep(); if (reduce) later(50, woken); });
+
+  // copy the storyboard as plain text (for a Higgsfield / Remotion prompt)
+  $('copy').onclick = () => {
+    const txt = "Where's My Money? Lite: wake to unlock (dark phone, mint #3fd0a4 on near-black)\n" +
+      BEATS.map(([a, b, n, d], i) => `${i + 1}. ${a < 0 ? 'Before' : a + '-' + b + ' ms'} ${n}: ${d}`).join('\n');
+    const done = () => { $('copied').textContent = 'Copied'; setTimeout(() => $('copied').textContent = '', 1800); };
+    const fallback = () => { $('fb').innerHTML = '<textarea class="fallback" id="fbt" readonly></textarea>'; $('fbt').value = txt; $('fbt').select(); $('copied').textContent = 'Select all and copy'; };
+    try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (e) { fallback(); }
+  };
+
+  sleep();
+  if (reduce) woken();
+})();
+</script>
+</body>
+</html>

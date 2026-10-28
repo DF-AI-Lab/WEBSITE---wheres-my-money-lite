@@ -1,0 +1,78 @@
+/* Shared bits for every page: the chapter nav, the "next chapter" band, the hand that holds the phone and the thumb print.
+   Colours come from each page's own tokens (--bg, --text, --border, --accent or --mint). */
+
+/* ---------- chapter nav (top of every page, scrolls away) ---------- */
+.sitenav { position: relative; z-index: 50; border-bottom: 1px solid var(--border); background: var(--bg); font-family: "Manrope", system-ui, sans-serif; }
+.sitenav .in { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 14px;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
+.sitenav .home { display: flex; align-items: center; gap: 9px; color: var(--text); text-decoration: none; font-weight: 800; font-size: 15px; white-space: nowrap; }
+.sitenav .home img { width: 28px; height: 28px; border-radius: 8px; }
+.sitenav .chs { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+.sitenav .chs::-webkit-scrollbar { display: none; }
+.sitenav .chs a { flex: none; display: flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 10px; color: var(--muted, #93a39d); text-decoration: none; font-weight: 700; font-size: 14px; transition: background .2s, color .2s; }
+.sitenav .chs a i { font-style: normal; font-size: 11px; width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid currentColor; }
+.sitenav .chs a:hover { color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); }
+.sitenav .chs a[aria-current="page"] { color: var(--text); }
+.sitenav .chs a[aria-current="page"] i { background: var(--accent, var(--mint)); border-color: transparent; color: #06221b; }
+.sitenav .get { flex: none; border-radius: 11px; padding: 8px 13px; font-weight: 800; font-size: 14px; text-decoration: none; background: var(--accent, var(--mint)); color: var(--on-accent, #06221b); }
+@media (max-width: 760px) {
+  .sitenav .in { flex-wrap: wrap; gap: 8px 10px; }
+  .sitenav .chs { order: 3; width: 100%; margin-left: 0; }
+  .sitenav .get { margin-left: auto; }
+  .sitenav .chs a { padding: 6px 9px; font-size: 13px; }
+}
+
+/* ---------- next chapter band (bottom of every page) ---------- */
+.nextch { border-top: 1px solid var(--border); background: var(--bg); font-family: "Manrope", system-ui, sans-serif; }
+.nextch .in { max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between;
+  padding: 36px max(16px, env(safe-area-inset-right, 0px)) 44px max(16px, env(safe-area-inset-left, 0px)); }
+.nextch a.go { display: grid; gap: 2px; text-decoration: none; color: var(--text); padding: 16px 22px; border-radius: 18px; border: 1.5px solid var(--border); transition: border-color .2s, transform .2s; }
+.nextch a.go:hover { border-color: var(--accent, var(--mint)); transform: translateX(4px); }
+.nextch a.go small { color: var(--muted, #93a39d); font-weight: 700; font-size: 13px; }
+.nextch a.go b { font-size: 22px; }
+.nextch a.go b span { color: var(--accent, var(--mint)); }
+.nextch .small { color: var(--muted, #93a39d); font-size: 14px; }
+.nextch .small a { color: inherit; }
+
+/* ---------- the hand holding the phone ---------- */
+/* .inhand wraps .phone. The hand is two SVG layers: .hand-back sits behind the phone (palm, fingers), .hand-front on top (thumb, fingertips).
+   Both cover the same box: from 30% left of the phone to 40% right, from 37.5% down to 37.5% below it (viewBox -120 300 680 800, phone = 0..400 x 0..800). */
+.inhand { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; isolation: isolate; max-width: 100%; }
+.inhand > .phone { min-width: 0; }
+.inhand > .phone { z-index: 1; }
+.inhand .hand-back, .inhand .hand-front { position: absolute; left: -30%; width: 170%; top: 37.5%; height: 100%; pointer-events: none; overflow: visible; }
+.inhand .hand-back { z-index: 0; -webkit-mask-image: linear-gradient(#000 62%, transparent 92%); mask-image: linear-gradient(#000 62%, transparent 92%); }
+.inhand .hand-front { z-index: 2; -webkit-mask-image: linear-gradient(#000 62%, transparent 92%); mask-image: linear-gradient(#000 62%, transparent 92%); }
+.inhand .hand-front .hthumb { transform-box: view-box; transform-origin: 520px 880px; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+.inhand.press .hand-front .hthumb { transform: rotate(-4deg) translate(-6px, 2px); }
+/* the gentle hover: the whole hand + phone floats */
+.inhand.float { animation: handfloat 6.5s ease-in-out infinite; }
+@keyframes handfloat {
+  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
+  50% { transform: translateY(-12px) rotate(.6deg); }
+}
+.inhand .handshadow { position: absolute; z-index: -1; left: 10%; right: 0; bottom: -46%; height: 60px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.35), transparent); filter: blur(6px); pointer-events: none; }
+/* the wrapper needs the phone's width: the phone keeps its own width rule */
+.inhand > .phone { max-width: 100%; }
+
+/* ---------- thumb print on the glass ---------- */
+.tprint { position: absolute; z-index: 30; width: 60px; height: 78px; margin: -39px 0 0 -30px; border-radius: 50%; pointer-events: none; opacity: 0;
+  background:
+    repeating-radial-gradient(ellipse 60% 70% at 50% 62%, rgba(255,255,255,.28) 0 1.4px, transparent 1.6px 4.6px),
+    radial-gradient(ellipse at 50% 55%, rgba(255,255,255,.16), rgba(255,255,255,0) 70%);
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
+  box-shadow: 0 0 22px rgba(63,208,164,.25); }
+:root[data-theme="light"] .tprint { filter: invert(1); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .tprint.inv { filter: invert(1); } }
+
+@media (max-width: 520px) {
+  .inhand.float { animation-duration: 7.5s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .inhand.float { animation: none; }
+  .inhand .hand-front .hthumb { transition: none; }
+}
+
+/* the hand can reach past the page edge: never make the page scroll sideways */
+body { overflow-x: clip; }

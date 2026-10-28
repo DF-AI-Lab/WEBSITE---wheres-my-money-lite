@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Play · Where's My Money? Lite</title>
+<meta name="description" content="Where's My Money? Lite: see what's spare, payday to payday. No bank login, your money stays on your phone.">
+<link rel="icon" href="lite-192.png">
+<meta name="theme-color" content="#0f1513">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: three columns on desktop. Left = Scenarios (one-tap stories), middle = the working Lite app in a phone, right = Tips + explore progress.
+   Under 1100px the phone stands alone and the two rails become one bottom sheet with tabs. Dark first, like Darren's phone. */
+:root {
+  --bg: #0f1513; --card: #171f1c; --text: #e9f0ed; --muted: #93a39d; --border: #26332f; --row: #1d2724;
+  --accent: #3fd0a4; --on-accent: #06221b; --good: #3fd0a4; --bad: #f07a6a; --goodbg: rgba(63,208,164,.14); --badbg: rgba(240,122,106,.16);
+  --bill: #7fb0ff; --on-bill: #071a33; --spend: #f2b632; --on-spend: #241a00; --pot: #f59a4a; --on-pot: #1f0e00; --spare: #3fd0a4; --ring-bg: #26332f;
+  --zused: #e06cd8; --zfree: #6b5a9e; --zfreetext: #a99ad6; --on-z: #2a0627;
+  --phone: #050807; --glow: rgba(63,208,164,.13); --tip: #e9f0ed; --on-tip: #0f1513; --shade: rgba(0,0,0,.5);
+  --display: "Bricolage Grotesque", "Manrope", system-ui, sans-serif;
+  --body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.2,.8,.2,1);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f3f5f4; --card: #ffffff; --text: #14201c; --muted: #5d6b66; --border: #dde3e0; --row: #eef2f0;
+  --accent: #0f6e5c; --on-accent: #ffffff; --good: #138a5e; --bad: #c8463a; --goodbg: rgba(19,138,94,.12); --badbg: rgba(200,70,58,.12);
+  --bill: #2f6fd0; --on-bill: #ffffff; --spend: #b07d00; --on-spend: #ffffff; --pot: #e0701b; --on-pot: #1f0e00; --spare: #13a07a; --ring-bg: #dde3e0;
+  --zused: #b53aab; --zfree: #c3b6ea; --zfreetext: #6b5a9e; --on-z: #ffffff;
+  --phone: #14201c; --glow: rgba(15,110,92,.14); --tip: #14201c; --on-tip: #ffffff; --shade: rgba(20,32,28,.35);
+  color-scheme: light } }
+:root[data-theme="light"] {
+  --bg: #f3f5f4; --card: #ffffff; --text: #14201c; --muted: #5d6b66; --border: #dde3e0; --row: #eef2f0;
+  --accent: #0f6e5c; --on-accent: #ffffff; --good: #138a5e; --bad: #c8463a; --goodbg: rgba(19,138,94,.12); --badbg: rgba(200,70,58,.12);
+  --bill: #2f6fd0; --on-bill: #ffffff; --spend: #b07d00; --on-spend: #ffffff; --pot: #e0701b; --on-pot: #1f0e00; --spare: #13a07a; --ring-bg: #dde3e0;
+  --zused: #b53aab; --zfree: #c3b6ea; --zfreetext: #6b5a9e; --on-z: #ffffff;
+  --phone: #14201c; --glow: rgba(15,110,92,.14); --tip: #14201c; --on-tip: #ffffff; --shade: rgba(20,32,28,.35);
+  color-scheme: light }
+
+* { box-sizing: border-box; }
+html { overflow-x: clip; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--body); font-variant-numeric: tabular-nums; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex: none; }
+.dot.bill { background: var(--bill); } .dot.pot { background: var(--pot); } .dot.spend { background: var(--spend); } .dot.spare { background: var(--spare); }
+.dot.zused { background: var(--zused); } .dot.zfree { background: var(--zfree); } .dot.grey { background: var(--muted); }
+
+/* page header */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 40; background: var(--bg); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.top .in { max-width: 1320px; margin: 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.brand img { width: 32px; height: 32px; border-radius: 8px; }
+.brand span { font: 800 20px var(--display); letter-spacing: -.01em; }
+.reset { margin-left: auto; border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 8px 14px; font-weight: 800; display: flex; gap: 8px; align-items: center; }
+.reset svg { transition: transform .5s var(--ease); }
+.reset:hover svg { transform: rotate(-180deg); }
+
+/* three columns */
+.layout { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 404px minmax(0, 1fr); gap: 36px; align-items: start;
+  padding: 28px max(16px, env(safe-area-inset-right, 0px)) 60px max(16px, env(safe-area-inset-left, 0px)); }
+.rail { position: sticky; top: 84px; display: grid; gap: 14px; }
+.rail h2 { font: 800 28px/1.05 var(--display); letter-spacing: -.02em; margin: 0; }
+.rail .lead { color: var(--muted); margin: 0; font-size: 14px; }
+.scn { display: grid; gap: 8px; }
+.sc { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 38px 1fr; gap: 2px 12px; padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--border);
+  transition: transform .15s var(--ease), border-color .2s; }
+.sc:hover { transform: translateX(3px); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.sc:active { transform: scale(.98); }
+.sc:focus-visible { outline: 3px solid var(--accent); }
+.sc .ic { grid-row: 1 / span 3; width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; background: var(--row); }
+.sc b { font-size: 15px; }
+.sc small { color: var(--muted); font-size: 13px; }
+.sc .res { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.sc.done { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+.sc.done .ic { background: var(--goodbg); }
+.chg { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 99px; animation: inrow .4s var(--ease); }
+.chg.up { background: var(--goodbg); color: var(--good); } .chg.down { background: var(--badbg); color: var(--bad); } .chg.same { background: var(--row); color: var(--muted); }
+
+.tipbox { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
+.switch { display: flex; align-items: center; gap: 12px; font-weight: 800; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch .tr { width: 46px; height: 28px; border-radius: 99px; background: var(--row); border: 1px solid var(--border); position: relative; transition: background .25s; flex: none; }
+.switch .tr::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: transform .3s var(--ease), background .25s; }
+.switch input:checked + .tr { background: var(--accent); }
+.switch input:checked + .tr::after { transform: translateX(18px); background: var(--on-accent); }
+.switch input:focus-visible + .tr { outline: 3px solid var(--accent); outline-offset: 2px; }
+.prog { display: grid; gap: 6px; }
+.prog .pt { font-size: 14px; color: var(--muted); }
+.prog .pt b { color: var(--text); }
+.pbarx { height: 8px; border-radius: 99px; background: var(--row); overflow: hidden; position: relative; }
+.pbarx i { display: block; height: 100%; width: 0; border-radius: 99px; background: var(--accent); transition: width .6s var(--ease); }
+.tipbox.all .pbarx i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: translateX(-100%); animation: shine 1.4s .2s var(--ease) 2; }
+@keyframes shine { to { transform: translateX(100%); } }
+.allmsg { font-weight: 800; color: var(--good); animation: inrow .5s var(--ease); }
+.tlist { display: grid; gap: 4px; }
+.tl { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; padding: 8px; border-radius: 10px; font-size: 13px; color: var(--muted); }
+.tl:hover { background: var(--row); }
+.tl:focus-visible { outline: 2px solid var(--accent); }
+.tl .num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; border: 1.5px dashed var(--border); }
+.tl.found { color: var(--text); }
+.tl.found .num { background: var(--accent); color: var(--on-accent); border: 0; }
+.tl b { display: block; font-size: 14px; }
+
+/* phone */
+.center { display: grid; justify-items: center; gap: 14px; position: relative; min-width: 0; }
+.center::before { content: ""; position: absolute; top: 6%; width: 130%; max-width: 560px; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, var(--glow), transparent 66%); pointer-events: none; }
+.phone { position: relative; width: 392px; max-width: 100%; background: var(--phone); border-radius: 52px; padding: 11px; box-shadow: 0 40px 80px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.06); transition: box-shadow .6s; }
+.phone.win { box-shadow: 0 40px 80px rgba(0,0,0,.35), 0 0 0 3px var(--accent), 0 0 60px var(--glow); }
+.screen { position: relative; background: var(--bg); border-radius: 42px; overflow: hidden; height: min(780px, calc(100dvh - 130px)); min-height: 560px; display: flex; flex-direction: column; }
+.island { height: 30px; display: grid; place-items: center; flex: none; }
+.island i { width: 96px; height: 26px; border-radius: 99px; background: var(--phone); }
+.scroll { position: relative; overflow-y: auto; overflow-x: hidden; flex: 1; padding: 4px 12px 24px; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.pcap { font-size: 13px; color: var(--muted); text-align: center; position: relative; }
+
+/* app header */
+.ahead { display: flex; gap: 10px; align-items: flex-start; padding: 6px 2px 10px; }
+.ahead img { width: 44px; height: 44px; border-radius: 11px; }
+.ahead .nm { font: 800 19px/1.15 var(--body); letter-spacing: -.01em; }
+.ahead .tg { font-size: 12px; font-weight: 700; color: var(--accent); }
+.aside { margin-left: auto; display: grid; justify-items: end; gap: 6px; }
+.setbtn { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 6px 10px; font-size: 12px; font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.vrow { display: flex; gap: 6px; align-items: center; }
+.bell { position: relative; width: 30px; height: 28px; border: 1px solid var(--border); background: var(--card); border-radius: 9px; display: grid; place-items: center; color: var(--spend); }
+.bell b { position: absolute; top: -7px; right: -7px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--bad); color: #fff; font-size: 10px; line-height: 17px; text-align: center; }
+.appver { font-size: 11px; color: var(--muted); }
+.tab { display: flex; justify-content: center; border-top: 1px solid var(--border); margin: 0 2px 10px; position: relative; }
+.tab button { margin-top: -1px; border: 1px solid var(--border); border-top: 0; background: var(--bg); border-radius: 0 0 10px 10px; padding: 1px 12px 3px; color: var(--muted); line-height: 0; }
+
+/* cards */
+.c { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+.lbl { font-size: 11px; font-weight: 800; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 4px; }
+.info { all: unset; cursor: pointer; font-size: 13px; color: var(--muted); padding: 0 2px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.info:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
+.sthead { display: flex; justify-content: space-between; gap: 10px; }
+.bigwrap { position: relative; }
+.big { font: 800 40px/1.05 var(--body); letter-spacing: -.02em; color: var(--accent); margin: 4px 0 6px; }
+.big.low { color: var(--bad); }
+.key { font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0 6px; }
+.key span { white-space: nowrap; display: inline-flex; align-items: center; }
+.key .dot { width: 7px; height: 7px; margin-right: 4px; }
+.ringwrap { position: relative; flex: none; }
+.ring { width: 96px; height: 96px; display: block; }
+.ring circle { fill: none; stroke-width: 10; transition: stroke-dasharray .9s var(--ease), stroke-dashoffset .9s var(--ease); }
+.ring .bg { stroke: var(--ring-bg); } .ring .sb { stroke: var(--bill); } .ring .sp { stroke: var(--pot); } .ring .ss { stroke: var(--spend); } .ring .sf { stroke: var(--spare); }
+.ring text { fill: var(--text); font: 800 19px var(--body); }
+.strows { margin-top: 14px; font-size: 14px; }
+.strows .r { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-top: 1px dashed var(--border); color: var(--muted); }
+.strows .r > span:first-child { display: inline-flex; align-items: center; white-space: nowrap; }
+.strows .v { color: var(--text); font-weight: 700; }
+.strows .tot { color: var(--text); font-weight: 800; border-top: 0; }
+.strows .line { border-top: 2px solid var(--text); padding: 0; margin-top: 6px; }
+.k-bill { color: var(--bill) !important; } .k-spend { color: var(--spend) !important; } .k-pot { color: var(--pot) !important; } .k-bad { color: var(--bad) !important; }
+.ulink { all: unset; cursor: pointer; color: var(--text); font-weight: 700; border-bottom: 2px dotted var(--muted); }
+.ulink:focus-visible { outline: 2px solid var(--accent); }
+.zc { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.zrow { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); margin-top: 8px; }
+.zrow b { color: var(--text); margin-left: 10px; }
+.zrow b.free { color: var(--zfreetext); }
+.zc small { font-size: 11px; color: var(--muted); display: block; margin-top: 8px; }
+.zring { width: 92px; height: 92px; flex: none; }
+.zring circle { fill: none; stroke-width: 9; }
+.zring .zf { stroke: var(--zfree); } .zring .zu { stroke: var(--zused); transition: stroke-dasharray .6s var(--ease); }
+.zring text { fill: var(--text); font: 800 19px var(--body); } .zring text.s { font: 600 9px var(--body); fill: var(--muted); }
+
+.fh { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; cursor: pointer; font: 800 18px var(--body); }
+.fh:focus-visible { outline: 2px solid var(--accent); border-radius: 8px; }
+.fh .chev { margin-left: auto; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--muted); border: 1.5px solid transparent; transition: border-color .2s; flex: none; }
+.c.open > .fh .chev { border-color: var(--text); color: var(--text); }
+.fh .chev svg { transition: transform .3s var(--ease); }
+.c.open > .fh .chev svg { transform: rotate(90deg); }
+.c[data-k="spend"] > .fh { color: var(--spend); } .c[data-k="spend"] > .fh .dot { background: var(--spend); }
+.c[data-k="pots"] > .fh { color: var(--pot); } .c[data-k="pots"] > .fh .dot { background: var(--pot); }
+.c[data-k="card"] > .fh { color: var(--zused); } .c[data-k="card"] > .fh .dot { background: var(--zused); }
+.c[data-k="bills"] > .fh { color: var(--bill); } .c[data-k="bills"] > .fh .dot { background: var(--bill); }
+.c[data-k="last"] > .fh .dot, .c[data-k="cats"] > .fh .dot, .c[data-k="periods"] > .fh .dot { background: var(--muted); }
+.fb { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .4s var(--ease); }
+.c.open > .fb { grid-template-rows: 1fr; }
+.fb > div { overflow: hidden; min-height: 0; }
+.fb .in { padding-top: 12px; }
+.sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+
+.seg { display: inline-flex; background: var(--bg); border-radius: 99px; padding: 4px; border: 1px solid var(--border); }
+.seg button { border: 0; background: none; border-radius: 99px; padding: 5px 12px; font-size: 13px; font-weight: 700; color: var(--muted); transition: background .25s, color .25s; }
+.seg button.on { background: var(--spend); color: var(--on-spend); }
+.seg.b button.on { background: var(--bill); color: var(--on-bill); }
+.when { position: relative; display: inline-block; }
+.addform { display: grid; grid-template-columns: 30% 1fr auto; gap: 8px; margin: 12px 0; }
+.addform input { min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; font-size: 15px; }
+.addform input::placeholder { color: var(--muted); opacity: .7; }
+.addform button { border: 0; border-radius: 12px; padding: 0 16px; font-weight: 800; background: var(--spend); color: var(--on-spend); }
+.addform button:active { transform: scale(.95); }
+.addform.pot button { background: var(--pot); color: var(--on-pot); }
+.addform.bill button { background: var(--accent); color: var(--on-accent); }
+.addform.zz { grid-template-columns: 26% 1fr auto auto; }
+.addform.zz button { background: var(--zused); color: var(--on-z); padding: 0 13px; }
+.addform.zz button.off { background: var(--card); color: var(--text); border: 1px solid var(--border); font-size: 12px; padding: 0 9px; }
+.addform.bad input { border-color: var(--bad); animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.bar2 { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); font-weight: 700; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.row { position: relative; display: grid; grid-template-columns: 1fr auto 26px; gap: 0 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); animation: inrow .4s var(--ease); }
+.row .n { font-weight: 800; font-size: 15px; }
+.row .s { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.row .a { font-weight: 800; color: var(--spend); text-align: right; }
+.row.up .n, .row.up .a { font-style: italic; }
+.paidq { all: unset; cursor: pointer; display: block; font-size: 11px; font-weight: 800; color: var(--accent); text-align: right; }
+.more { all: unset; cursor: pointer; color: var(--muted); font-weight: 800; letter-spacing: 1px; text-align: center; border-radius: 8px; padding: 4px 6px; }
+.more:focus-visible { outline: 2px solid var(--accent); }
+.more.box { background: var(--row); color: var(--text); }
+.addcat { all: unset; cursor: pointer; color: var(--accent); font-weight: 800; border-bottom: 1.5px dashed var(--accent); }
+.grp { font-size: 11px; font-weight: 800; color: var(--muted); padding: 10px 0 4px; letter-spacing: .05em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.sums { margin-top: 6px; padding-top: 6px; font-size: 14px; }
+.sums div { display: flex; justify-content: space-between; padding: 4px 0; color: var(--muted); }
+.sums b { color: var(--text); }
+.sums .it { font-style: italic; }
+.sums .tt { color: var(--text); font-weight: 800; }
+.catv .cr { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; animation: inrow .35s var(--ease); }
+.catv .cr small { color: var(--muted); }
+.catv .cb { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--row); overflow: hidden; }
+.catv .cb i { display: block; height: 100%; border-radius: 99px; transition: width .7s var(--ease); }
+.note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+div.pot { position: relative; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.pot .ph { display: flex; align-items: center; gap: 8px; }
+.pot .ph .l { margin-left: auto; color: var(--accent); font-weight: 800; }
+.pot .ph .l.over { color: var(--bad); }
+.pbar { height: 8px; background: var(--row); border-radius: 99px; margin: 8px 0 6px; overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--pot); border-radius: 99px; transition: width .8s var(--ease); }
+.pot.over .pbar i { background: var(--bad); }
+.pot small { color: var(--muted); font-size: 12px; }
+.setamt { width: 86px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; margin-left: auto; }
+
+.ccrow { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); animation: inrow .4s var(--ease); }
+.ccrow .a { color: var(--zused); font-weight: 800; margin-left: auto; }
+.ccrow.pay .a { color: var(--accent); }
+.ccrow .x { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg); }
+.ccrow small { color: var(--muted); display: block; font-size: 12px; }
+.cclim { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; padding-top: 12px; font-size: 14px; color: var(--muted); }
+.cclim .free { color: var(--text); font-weight: 800; }
+.cclim b { color: var(--zfreetext); text-align: right; }
+
+/* bills */
+.bl { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid var(--border); animation: inrow .4s var(--ease); }
+.bl .n { font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.bl .n i { font-style: normal; font-weight: 700; font-size: 13px; color: var(--muted); }
+.bl.paid .n, .bl.paid .n i { color: var(--good); }
+.bl.paid .n::before { content: "✓"; font-weight: 800; }
+.bl .s { font-size: 13px; color: var(--muted); }
+.bl .side { position: relative; grid-row: 1 / span 2; grid-column: 2; display: grid; grid-template-columns: auto 34px; gap: 4px 8px; align-items: center; justify-items: end; }
+.bl .amt { all: unset; cursor: pointer; color: var(--bill); font-weight: 800; }
+.bl .amt:focus-visible { outline: 2px solid var(--accent); }
+.bl .pill { grid-column: 1; }
+.pill { font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 99px; background: var(--row); color: var(--muted); white-space: nowrap; }
+.pill.up { background: var(--badbg); color: var(--bad); } .pill.down { background: var(--goodbg); color: var(--good); }
+.addlink { all: unset; cursor: pointer; color: var(--accent); font-weight: 800; font-size: 13px; }
+.potrow { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.potrow .n { color: var(--pot); font-weight: 800; }
+.potrow .s { font-size: 13px; color: var(--muted); }
+.potrow .pbar { grid-column: 1; width: 85%; margin: 6px 0 0; height: 5px; }
+.potrow .pbar i { background: var(--bill); }
+.potrow.over .pbar i { background: var(--bad); }
+.potrow.over .s { color: var(--bad); }
+.potrow .v { grid-row: 1 / span 3; grid-column: 2; color: var(--bill); font-weight: 800; }
+.btotal { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 12px 0; border-top: 2px solid var(--text); margin-top: -1px; }
+.btotal b { font-size: 15px; }
+.btotal small { color: var(--muted); font-weight: 700; }
+.btotal .v { color: var(--bill); font-weight: 800; text-align: right; }
+.btotal .pill { justify-self: end; grid-column: 2; }
+.paused { border-bottom: 1px solid var(--border); }
+.paused > button { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; padding: 10px 0; font-size: 13px; color: var(--muted); font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.paused > button svg { transition: transform .3s var(--ease); }
+.paused.open > button svg { transform: rotate(90deg); }
+.paused .pl { display: none; }
+.paused.open .pl { display: block; }
+.paused .pr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; }
+.chip { border: 1px solid var(--border); background: var(--bg); border-radius: 99px; padding: 5px 11px; font-size: 12px; font-weight: 700; }
+.chip:active { transform: scale(.95); }
+
+/* last month + categories + periods */
+.lrow { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto 50px; gap: 4px 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.lrow .n { font-weight: 800; display: flex; align-items: center; }
+.lrow .s { font-size: 13px; color: var(--muted); }
+.lrow .v { grid-column: 2; grid-row: 1; text-align: right; font-weight: 800; }
+.lrow .pill { grid-column: 2; grid-row: 2; justify-self: end; }
+.lrow .opn { grid-column: 3; grid-row: 1 / span 2; border: 1px solid var(--border); background: var(--bg); border-radius: 99px; padding: 3px 8px; font-size: 12px; font-weight: 700; color: var(--muted); display: flex; gap: 3px; align-items: center; justify-self: end; }
+.lrow .opn svg { transition: transform .3s var(--ease); }
+.lrow.open .opn svg { transform: rotate(180deg); }
+.lrow .kids { grid-column: 1 / -1; display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s var(--ease); }
+.lrow.open .kids { grid-template-rows: 1fr; }
+.lrow .kids > div { overflow: hidden; }
+.kid { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0 6px 12px; font-size: 13px; color: var(--muted); border-left: 2px solid var(--border); }
+.kid .tb { all: unset; cursor: pointer; color: var(--bill); font-weight: 800; font-size: 12px; margin-left: 8px; }
+.ltot { display: flex; justify-content: space-between; padding: 12px 50px 0 0; border-top: 2px solid var(--text); margin-top: -1px; font-weight: 800; }
+.crow { position: relative; border-bottom: 1px solid var(--border); }
+.crow > button { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: grid; grid-template-columns: 22px 1fr auto; gap: 0 8px; align-items: center; padding: 12px 0; }
+.crow > button:focus-visible { outline: 2px solid var(--accent); }
+.crow > button svg { color: var(--muted); transition: transform .3s var(--ease); }
+.crow.open > button svg { transform: rotate(90deg); }
+.crow b { display: block; font-size: 15px; }
+.crow small { color: var(--muted); font-size: 13px; }
+.crow .kids { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s var(--ease); }
+.crow.open .kids { grid-template-rows: 1fr; }
+.crow .kids > div { overflow: hidden; padding-left: 30px; }
+.crow .kids .kid { margin-bottom: 8px; }
+.tiles { display: grid; gap: 10px; }
+.tile { position: relative; border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+.tile b { display: block; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.tile .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tile .cols small { display: block; font-size: 10px; letter-spacing: .05em; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+.tile .cols span { font-weight: 700; font-size: 14px; }
+.tile.left .cols span { color: var(--good); }
+.tile.left { border-top: 2px solid var(--text); }
+.foot { text-align: center; font-size: 12px; color: var(--muted); padding: 6px 8px 0; }
+
+/* overlays inside the phone */
+.menu { position: absolute; z-index: 7; width: 270px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 8px; box-shadow: 0 18px 40px rgba(0,0,0,.35);
+  transform-origin: top right; transform: scale(.94); opacity: 0; pointer-events: none; transition: transform .22s var(--ease), opacity .18s; }
+.menu.on { transform: none; opacity: 1; pointer-events: auto; }
+.menu .big2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.menu .big2 button { border-radius: 12px; padding: 11px 6px; font-weight: 800; border: 1.5px solid var(--border); background: var(--bg); }
+.menu .big2 .pri { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.menu .big2 .stop { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, var(--border)); }
+.menu .mi { all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; padding: 9px 10px; border-radius: 10px; font-weight: 700; font-size: 14px; }
+.menu .mi:hover, .menu .mi:focus-visible { background: var(--row); }
+.menu hr { border: 0; border-top: 1px solid var(--border); margin: 6px 2px 8px; }
+.menu .mh { font-size: 13px; font-weight: 800; padding: 6px 6px 8px; }
+.menu .mf { display: flex; gap: 8px; }
+.menu .mf input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; }
+.menu .mf button, .menu .back { border: 0; border-radius: 10px; padding: 0 12px; font-weight: 800; background: var(--accent); color: var(--on-accent); }
+.menu .back { background: none; color: var(--muted); padding: 6px; font-size: 13px; }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.days button { border: 1px solid var(--border); background: var(--bg); border-radius: 8px; padding: 6px 0; font-size: 12px; font-weight: 700; }
+.days button.on { background: var(--bill); color: var(--on-bill); border-color: transparent; }
+.days .vary { grid-column: span 3; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tipb { position: absolute; z-index: 9; max-width: 250px; background: var(--tip); color: var(--on-tip); font-size: 12px; line-height: 1.45; padding: 9px 11px; border-radius: 10px; box-shadow: 0 10px 26px rgba(0,0,0,.3); pointer-events: none;
+  opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s var(--ease); }
+.tipb.on { opacity: 1; transform: none; }
+.tcard { position: absolute; z-index: 10; left: 14px; right: 14px; background: var(--card); border: 1.5px solid var(--accent); border-radius: 18px; padding: 14px 16px; box-shadow: 0 20px 44px rgba(0,0,0,.4);
+  opacity: 0; transform: translateY(8px) scale(.98); transition: opacity .22s, transform .3s var(--ease); pointer-events: none; }
+.tcard.on { opacity: 1; transform: none; pointer-events: auto; }
+.tcard .k { font-size: 11px; font-weight: 800; color: var(--accent); letter-spacing: .05em; text-transform: uppercase; }
+.tcard h3 { margin: 2px 0 4px; font: 800 18px var(--body); }
+.tcard p { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+.tcard .tb { display: flex; gap: 8px; justify-content: flex-end; }
+.tcard .tb button { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 800; background: var(--row); }
+.tcard .tb .go { background: var(--accent); color: var(--on-accent); }
+.hs { position: absolute; top: -9px; left: -9px; z-index: 4; width: 22px; height: 22px; border-radius: 50%; border: 0; padding: 0; background: var(--accent); color: var(--on-accent); font: 800 11px/22px var(--body); text-align: center;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); animation: hsin .4s var(--ease) both, ping 2.2s 1s infinite; }
+.hs.found { background: var(--card); color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); animation: hsin .4s var(--ease) both; }
+@keyframes hsin { from { transform: scale(0); } }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 9px transparent; } }
+.hl { outline: 2px solid var(--accent) !important; outline-offset: 3px; border-radius: 12px; transition: outline-color .3s; }
+.flashhl { animation: flashhl 1.8s var(--ease); }
+@keyframes flashhl { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 25%, 60% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent); } }
+.flash { position: absolute; inset: 0; display: grid; place-items: center; z-index: 8; pointer-events: none; opacity: 0; background: color-mix(in srgb, var(--accent) 94%, transparent); color: var(--on-accent); text-align: center; }
+.flash b { display: block; font: 800 44px var(--display); }
+.flash.go { animation: flash 1.7s var(--ease); }
+@keyframes flash { 0% { opacity: 0; } 14%, 58% { opacity: 1; } 100% { opacity: 0; } }
+.toast { position: absolute; left: 50%; bottom: 18px; z-index: 11; transform: translate(-50%, 16px); opacity: 0; background: var(--tip); color: var(--on-tip); font-size: 13px; font-weight: 700; padding: 9px 14px; border-radius: 12px; white-space: nowrap; transition: .3s var(--ease); pointer-events: none; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+@keyframes inrow { from { opacity: 0; transform: translateY(-6px); } }
+
+/* the hand + thumb */
+@media (min-width: 1100px) { .layout { gap: 72px; } }
+.center .inhand { width: 392px; max-width: 100%; }
+.center .inhand > .phone { width: 100%; }
+.center { padding-bottom: 120px; }
+.strows .dot { align-self: center; height: 8px; flex: none; }
+@media (max-width: 1099px) { .center { padding-bottom: 60px; } }
+@media (max-width: 520px) { .center .inhand { width: 86%; translate: -12px 0; } }
+
+/* bottom sheet tabs (narrow screens) */
+.sheettabs { display: none; }
+@media (max-width: 1099px) {
+  .layout { grid-template-columns: minmax(0, 1fr); padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .center { grid-row: 1; }
+  .rail { position: fixed; top: auto; left: 0; right: 0; bottom: 0; z-index: 25; max-height: 64dvh; overflow-y: auto; background: var(--card); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
+    padding: 20px max(16px, env(safe-area-inset-right, 0px)) calc(84px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); box-shadow: 0 -20px 50px rgba(0,0,0,.35);
+    transform: translateY(105%); transition: transform .4s var(--ease); }
+  body.sheet-open .rail.cur { transform: none; }
+  .tipbox { background: var(--bg); }
+  .sc { background: var(--bg); }
+  .sheettabs { display: flex; position: fixed; z-index: 26; left: 0; right: 0; bottom: 0; gap: 8px; align-items: center; background: color-mix(in srgb, var(--card) 94%, transparent); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border); padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .sheettabs button { flex: 1; border: 1px solid var(--border); background: var(--bg); border-radius: 12px; padding: 11px; font-weight: 800; display: flex; justify-content: center; gap: 8px; align-items: center; }
+  .sheettabs button.on { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+  .sheettabs .cnt { font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--row); color: var(--text); }
+  .sheettabs button.on .cnt { background: var(--on-accent); color: var(--accent); }
+}
+@media (max-width: 440px) { .screen { height: calc(100dvh - 170px); } .phone { border-radius: 44px; padding: 8px; } .screen { border-radius: 36px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+</style>
+<link rel="stylesheet" href="site.css">
+</head>
+<body data-page="play">
+<header class="top"><div class="in">
+  <div class="brand"><img src="lite-192.png" alt=""><span>Lite Playground</span></div>
+  <button class="reset" id="reset" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Reset</button>
+</div></header>
+
+<div class="layout">
+  <aside class="rail" id="railS" aria-label="Scenarios">
+    <h2>Scenarios</h2>
+    <p class="lead">Tap a story. Watch the app change, then see what it did to your spare cash.</p>
+    <div class="scn" id="scn"></div>
+  </aside>
+
+  <div class="center">
+    <div class="pcap">Everything works. Example numbers only.</div>
+    <div class="phone" id="phone">
+      <div class="screen" id="screen">
+        <div class="island"><i></i></div>
+        <div class="scroll" id="scroll"></div>
+        <div class="menu" id="bmenu" role="menu"></div>
+        <div class="tipb" id="tipb" role="tooltip"></div>
+        <div class="tcard" id="tcard" role="dialog" aria-live="polite"></div>
+        <div class="flash" id="flash"><div><b>Payday</b><span id="flashamt"></span></div></div>
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="rail" id="railT" aria-label="Tips">
+    <h2>Tips</h2>
+    <p class="lead">Turn on tip mode and tap the mint dots to learn each part of the app.</p>
+    <div class="tipbox" id="tipbox">
+      <label class="switch"><input type="checkbox" id="tipmode"><span class="tr"></span>Tip mode</label>
+      <div class="prog"><div class="pt" id="ptext"></div><div class="pbarx"><i id="pbar"></i></div><div class="allmsg" id="allmsg" hidden>You know Lite inside out.</div></div>
+      <div class="tlist" id="tlist"></div>
+    </div>
+  </aside>
+</div>
+
+<nav class="sheettabs" id="sheettabs" aria-label="Playground panels">
+  <button type="button" data-tab="railS">Scenarios</button>
+  <button type="button" data-tab="railT">Tips <span class="cnt" id="tcnt">0/12</span></button>
+</nav>
+
+<script src="site.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fmt = n => (n < -0.004 ? '−£' : '£') + Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const sgn = n => (n > 0.004 ? '+' : n < -0.004 ? '−' : '') + '£' + Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const num = v => { const n = parseFloat(String(v).replace(/[£,\s]/g, '')); return isFinite(n) ? Math.round(n * 100) / 100 : NaN; };
+  const ord = d => d + ([, 'st', 'nd', 'rd'][d % 100 >> 3 ^ 1 && d % 10] || 'th');
+  const CHEV = '<svg width="14" height="14" viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  const DOWN = '<svg width="11" height="11" viewBox="0 0 14 14"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+  // ---------- the example month (demo numbers from the app's own demo, not anyone's real money) ----------
+  // Pay cycle 25 Oct to 24 Nov 2024; "today" is 6 Nov, so bills due on the 1st, 3rd, 5th and 28th have gone out.
+  const TODAY = new Date(2024, 10, 6), CYCLE = new Date(2024, 9, 25);
+  const START = () => ({
+    pay: 2500, left: 0, limit: 500,
+    bills: [
+      { id: 1, n: 'Rent', d: 1, cat: 'Household', a: 550.00, avg: 550.00 },
+      { id: 2, n: 'Council Tax', d: 1, cat: 'Household', a: 161.00, avg: 161.00 },
+      { id: 3, n: 'Energy Co', d: 5, cat: 'Household', a: 152.81, avg: 152.81 },
+      { id: 4, n: 'Broadband & TV', d: 3, cat: 'Household', a: 150.00, avg: 150.00 },
+      { id: 5, n: 'Water', d: 20, cat: 'Household', a: 56.67, avg: 52.36 },
+      { id: 6, n: 'Car insurance', d: 15, cat: 'Car', a: 54.20, avg: 54.20 },
+      { id: 7, n: 'EE mobile', d: 10, cat: 'Phone', a: 32.00, avg: 32.00 },
+      { id: 8, n: 'Netflix', d: 12, cat: 'Subscriptions', a: 13.80, avg: 13.80 },
+      { id: 9, n: 'Tv Licence', d: 28, cat: 'Household', a: 13.25, avg: 13.25 },
+    ],
+    pots: [{ n: 'Shopping', a: 400 }, { n: 'Fuel', a: 150 }, { n: 'Going out', a: 0 }],
+    spends: [
+      { id: 1, n: 'Costa', a: 12.50, cat: '', when: '25 Oct 2024' },
+      { id: 2, n: 'Tesco', a: 34.20, cat: 'Food shopping', when: '25 Oct 2024' },
+      { id: 3, n: 'Shell', a: 60.00, cat: 'Fuel', when: '30 Oct 2024' },
+    ],
+    card: [{ n: 'Amazon', a: 45.00, when: '25 Oct 2024' }],
+    open: { spend: true, pots: false, card: false, bills: true, last: false, cats: false, periods: false },
+    billView: 'all', spendView: 'all', mode: 'paid', nid: 20,
+  });
+  const USUAL = { 'Food shopping': 224.33, Shopping: 88.33, Fuel: 71.67, 'Going out': 35.00, Unsorted: 12.00 };
+  const LAST = [
+    { n: 'Food shopping', v: 238.00, avg: 224.33, shops: [['Tesco', 158.00], ['Aldi', 80.00]] },
+    { n: 'Fuel', v: 81.00, avg: 71.67, shops: [['Shell', 81.00]] },
+    { n: 'Shopping', v: 60.00, avg: 88.33, shops: [['Amazon', 60.00]] },
+    { n: 'Going out', v: 28.00, avg: 35.00, shops: [['Nandos', 28.00]] },
+    { n: 'Unsorted', v: 26.50, avg: 12.00, shops: [['Costa', 26.50]] },
+  ];
+  const CATS = ['Household', 'Car', 'Phone', 'Subscriptions', 'Food shopping', 'Fuel', 'Shopping', 'Going out', 'Debt'];
+  const guess = n => { n = n.toLowerCase();
+    if (/shell|bp|esso|petrol|texaco|fuel/.test(n)) return 'Fuel';
+    if (/tesco|asda|aldi|lidl|sainsbury|morrisons|co-?op/.test(n)) return 'Food shopping';
+    if (/pub|bar|cinema|nandos|pizza/.test(n)) return 'Going out';
+    if (/amazon|next|primark|argos/.test(n)) return 'Shopping';
+    return ''; };
+  let S = START();
+  const openLast = new Set(), openCat = new Set(); let pausedOpen = false;
+
+  // ---------- the sums (same rules as the app: Actual spare = pay + left − every bill − every spend) ----------
+  const potOf = cat => S.pots.find(p => p.a > 0 && cat && p.n.toLowerCase() === cat.toLowerCase());
+  const dueDate = d => { const m = d >= CYCLE.getDate() ? 9 : 10; return new Date(2024, m, d); };
+  const gone = b => b.d !== 'varies' && b.d && dueDate(b.d) <= TODAY;
+  function compute() {
+    const live = S.bills.filter(b => !b.paused);
+    const bills = live.reduce((s, b) => s + b.a, 0), billsAvg = live.reduce((s, b) => s + b.avg, 0);
+    const pots = S.pots.map(p => ({ ...p, spent: S.spends.filter(x => potOf(x.cat) === p).reduce((s, x) => s + x.a, 0) }));
+    const potSpent = pots.reduce((s, p) => s + p.spent, 0), potsSet = pots.reduce((s, p) => s + p.a, 0);
+    const potsLeft = pots.reduce((s, p) => s + Math.max(p.a - p.spent, 0), 0);
+    const potsOver = pots.reduce((s, p) => s + (p.a > 0 ? Math.max(p.spent - p.a, 0) : 0), 0);
+    const own = S.spends.filter(x => !potOf(x.cat)).reduce((s, x) => s + x.a, 0);
+    const all = S.spends.reduce((s, x) => s + x.a, 0), paid = S.spends.filter(x => !x.up).reduce((s, x) => s + x.a, 0);
+    const money = S.pay + S.left, used = S.card.reduce((s, x) => s + x.a, 0);
+    return { bills, billsAvg, pots, potSpent, potsSet, potsLeft, potsOver, own, all, paid, come: all - paid, money, used,
+      mfs: money - bills, start: money - bills - potsSet, actual: money - bills - all, free: S.limit - used };
+  }
+
+  // ---------- render ----------
+  const C = 2 * Math.PI * 40;
+  const arcs = parts => { let st = 0; return parts.map(([cls, p]) => { const len = Math.max(Math.min(p, 1 - st), 0) * C;
+    const out = `<circle cx="50" cy="50" r="40" class="${cls}" transform="rotate(-90 50 50)" stroke-dasharray="${len > 3 ? len - 2 : len} ${C}" stroke-dashoffset="${-st * C}"/>`; st += Math.max(p, 0); return out; }).join(''); };
+  const card = (k, title, inner, sub) => `<div class="c${S.open[k] ? ' open' : ''}" data-k="${k}" id="card-${k}">
+    <button class="fh" type="button" data-act="fold" data-k="${k}" aria-expanded="${!!S.open[k]}"><i class="dot"></i>${title}<span class="chev">${CHEV}</span></button>
+    ${sub ? `<p class="sub">${sub}</p>` : ''}<div class="fb"><div><div class="in">${inner}</div></div></div></div>`;
+  const diffPill = (v, avg, flip) => { const d = v - avg; const cls = Math.abs(d) < .005 ? '' : (d > 0) !== !!flip ? 'up' : 'down'; return `<span class="pill ${cls}">${sgn(d)}</span>`; };
+  let firstPaint = true;
+
+  function render() {
+    const r = compute(), f = x => r.money > 0 ? Math.max(x, 0) / r.money : 0, pc = x => Math.round(100 * f(x)) + '%';
+    const pl = r.potsLeft - r.potsOver;
+    const zp = Math.min(Math.max(r.used / S.limit, 0), 1);
+    const ringParts = firstPaint ? [['sb', 0], ['sp', 0], ['ss', 0], ['sf', 0]] : [['sb', f(r.bills)], ['sp', f(r.potSpent)], ['ss', f(r.own)], ['sf', f(r.actual)]];
+    const top = `
+      <div class="ahead"><img src="lite-192.png" alt=""><div><div class="nm">Where's My Money?</div><div class="tg">Payday to payday · Lite</div></div>
+        <div class="aside"><button class="setbtn" type="button" data-act="toast" data-msg="Settings live in the real app">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Settings</button>
+          <div class="vrow"><button class="bell" type="button" data-act="toast" data-msg="3 reminders: bills due, card, backup" aria-label="Reminders">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><b>3</b></button>
+            <span class="appver">demo.v0.59</span></div></div></div>
+      <div class="tab" id="t-tab"><button type="button" data-act="payday" aria-label="Start a new month"><svg width="14" height="10" viewBox="0 0 14 10"><path d="M2 7l5-4 5 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+      <div class="c" id="stcard"><div class="sthead">
+        <div class="bigwrap" id="t-big"><div class="lbl">Spare cash left <button class="info" type="button" data-tip="This is a guide. Check your bank app to confirm what's really left. Don't rely on this app alone.">ⓘ</button></div>
+          <div class="big${r.actual < 0 ? ' low' : ''}" data-roll="${r.actual}">${fmt(r.actual)}</div>
+          <div class="key"><span><i class="dot bill"></i>Bills ${pc(r.bills)}</span>·<span><i class="dot pot"></i>Pots ${pc(r.potSpent)}</span>·<span><i class="dot spend"></i>Spends ${pc(r.own)}</span>·<span><i class="dot spare"></i>Spare ${pc(r.actual)}</span></div></div>
+        <div class="ringwrap" id="t-ring"><svg class="ring" viewBox="0 0 100 100" role="img" aria-label="Where the money went"><circle cx="50" cy="50" r="40" class="bg"/>${arcs(ringParts)}<text x="50" y="57" text-anchor="middle">${pc(r.actual)}</text></svg></div></div>
+        <div class="strows">
+          <div class="r" id="t-pay"><span>Pay</span><button class="ulink" type="button" data-act="payday">${fmt(S.pay)}</button></div>
+          <div class="r"><span>+ Left from last month</span><button class="ulink" type="button" data-act="payday">${S.left ? fmt(S.left) : 'Add'}</button></div>
+          <div class="r"><span><i class="dot bill"></i>− Bills</span><span class="v k-bill" data-roll="${r.bills}">${fmt(r.bills)}</span></div>
+          <div class="r"><span><i class="dot spend"></i>− Spends <button class="info" type="button" data-tip="Spends that are not in a pot. Pot spends come out of the pot, so they show in Pots left.">ⓘ</button></span><span class="v k-spend" data-roll="${r.own}">${fmt(r.own)}</span></div>
+          <div class="r"><span><i class="dot pot"></i>${pl < 0 ? 'Pots over' : 'Pots left'} <button class="info" type="button" data-tip="What your pots still have to spend this month. Over comes off spare.">ⓘ</button></span><span class="v ${pl < 0 ? 'k-bad' : 'k-pot'}" data-roll="${pl}">${fmt(pl)}</span></div>
+          <div class="r line"></div>
+          <div class="r tot" id="t-start"><span>Starting spare</span><span data-roll="${r.start}">${fmt(r.start)}</span></div>
+          <div class="r tot"><span>Actual spare</span><span data-roll="${r.actual}">${fmt(r.actual)}</span></div>
+        </div></div>
+      <div class="c" id="t-zopa"><div class="zc"><div><div class="lbl">Zopa credit card</div>
+          <div class="zrow"><i class="dot zused"></i>Used<b>${fmt(r.used)}</b></div>
+          <div class="zrow"><i class="dot zfree"></i>Free<b class="free">${fmt(r.free)}</b></div><small>Limit ${fmt(S.limit)}</small></div>
+        <svg class="zring" viewBox="0 0 100 100" role="img" aria-label="Credit card limit used"><circle cx="50" cy="50" r="40" class="zf"/>
+          <circle cx="50" cy="50" r="40" class="zu" transform="rotate(-90 50 50)" stroke-dasharray="${firstPaint ? 0 : Math.max(zp * C - 1.5, 0)} ${C}"/>
+          <text x="50" y="54" text-anchor="middle">${Math.round(zp * 100)}%</text><text x="50" y="68" text-anchor="middle" class="s">used</text></svg></div></div>`;
+
+    // Add a spend
+    const up = S.spends.filter(s => s.up), paid = S.spends.filter(s => !s.up);
+    const srow = s => { const pot = potOf(s.cat);
+      const where = pot ? `<i class="dot pot"></i>${esc(pot.n)}` : s.cat ? esc(s.cat) : `<button type="button" class="addcat" data-act="spendcat" data-id="${s.id}">+ category</button>`;
+      return `<div class="row${s.up ? ' up' : ''}${!s.cat ? ' nocat' : ''}" data-sid="${s.id}"><div><div class="n">${esc(s.n)}</div><div class="s">${s.up ? 'No date yet' : s.when} · ${where}
+        <button type="button" class="info" data-tip="${s.up ? 'No date yet. It counts against your spare now. Tap Paid? when it has gone out.' : 'This is the date you added it. If it went out on another day, tap ⋯ to change the date.'}">ⓘ</button></div></div>
+        <div><div class="a">${fmt(s.a)}</div>${s.up ? `<button type="button" class="paidq" data-act="spendpaid" data-id="${s.id}">Paid?</button>` : ''}</div>
+        <button type="button" class="more" data-act="spenddel" data-id="${s.id}" aria-label="Remove ${esc(s.n)}">⋯</button></div>`; };
+    const spendCats = (() => { const g = {}; S.spends.forEach(s => { const k = s.cat || 'Unsorted'; g[k] = (g[k] || 0) + s.a; }); return Object.entries(g).sort((a, b) => b[1] - a[1]); })();
+    const smax = Math.max(1, ...spendCats.map(x => x[1]));
+    const spendIn = `<div class="when" id="t-when"><div class="seg"><button type="button" data-act="mode" data-v="paid" class="${S.mode === 'paid' ? 'on' : ''}">Paid</button><button type="button" data-act="mode" data-v="up" class="${S.mode === 'up' ? 'on' : ''}">Upcoming</button></div></div>
+      <form class="addform" data-form="spend" autocomplete="off"><input name="a" inputmode="decimal" placeholder="12.50" aria-label="Amount"><input name="n" placeholder="Coffee" aria-label="What was it"><button type="submit">Add</button></form>
+      <div class="bar2"><span>${S.spends.length} ${S.spends.length === 1 ? 'spend' : 'spends'}</span><div class="seg"><button type="button" data-act="sview" data-v="all" class="${S.spendView === 'all' ? 'on' : ''}">All</button><button type="button" data-act="sview" data-v="cat" class="${S.spendView === 'cat' ? 'on' : ''}">Categories</button></div></div>
+      ${S.spendView === 'all' ? `<div>${up.length ? `<div class="grp">Still to come</div>${up.map(srow).join('')}<div class="grp">Paid</div>` : ''}${paid.map(srow).join('') || '<div class="note" style="padding:10px 0">No spends yet. Type one above.</div>'}</div>`
+        : `<div class="catv">${spendCats.map(([k, v]) => `<div class="cr"><b>${esc(k)}</b><b>${fmt(v)}</b><div class="cb"><i style="width:${100 * v / smax}%;background:var(--spend)"></i></div></div>`).join('')}</div>`}
+      <div class="sums"><div><span>Money for spending</span><b>${fmt(r.mfs)}</b></div><div><span>Paid so far</span><b>${fmt(r.paid)}</b></div>
+        <div class="it"><span>Still to come</span><b>${fmt(r.come)}</b></div><div class="tt"><span>Left now</span><span>${fmt(r.mfs - r.all)}</span></div></div>`;
+
+    // Monthly pots
+    const potsIn = r.pots.map(p => { const over = p.a > 0 && p.spent > p.a;
+      return `<div class="pot${over ? ' over' : ''}" data-pot="${esc(p.n)}"><div class="ph"><b>${esc(p.n)}</b>${p.a > 0 ? `<span class="l${over ? ' over' : ''}">${over ? fmt(p.spent - p.a) + ' over' : fmt(p.a - p.spent) + ' left'}</span>`
+        : `<button type="button" class="ulink" style="margin-left:auto;font-size:13px" data-act="potset" data-n="${esc(p.n)}">Set an amount</button>`}
+        <button type="button" class="more" data-act="potdel" data-n="${esc(p.n)}" aria-label="Remove ${esc(p.n)}">⋯</button></div>
+        <div class="pbar"><i style="width:${p.a > 0 ? Math.min(100, 100 * p.spent / p.a) : 0}%"></i></div>${p.a > 0 ? `<small>${fmt(p.spent)} of ${fmt(p.a)}</small>` : ''}</div>`; }).join('')
+      + `<form class="addform pot" data-form="pot" autocomplete="off"><input name="a" inputmode="decimal" placeholder="400" aria-label="Pot amount"><input name="n" placeholder="New pot" aria-label="Pot name"><button type="submit">Add</button></form>
+      <div class="note">Spends and bills in a pot's category fill it. Over comes off spare.</div>`;
+
+    // Credit card
+    const cardIn = `<form class="addform zz" data-form="card" autocomplete="off"><input name="a" inputmode="decimal" placeholder="40" aria-label="Amount"><input name="n" placeholder="Shell" aria-label="What was it"><button type="submit">Add</button><button type="button" class="off" data-act="cardoff">Paid off</button></form>
+      ${S.card.map((c, i) => `<div class="ccrow${c.a < 0 ? ' pay' : ''}"><div><b>${esc(c.n)}</b><small>${c.when}</small></div><span class="a">${fmt(c.a)}</span><button type="button" class="x" data-act="carddel" data-i="${i}" aria-label="Remove">×</button></div>`).join('')}
+      <div class="cclim"><span>Limit</span><span>${fmt(S.limit)}</span><span class="free">Free</span><b>${fmt(r.free)}</b></div>`;
+
+    // Bills (every month)
+    const live = S.bills.filter(b => !b.paused).sort((a, b) => b.avg - a.avg), paused = S.bills.filter(b => b.paused);
+    const brow = b => { const isPaid = b.paid || gone(b);
+      const date = b.d === 'varies' ? 'varies' : b.d ? ord(b.d) : null;
+      return `<div class="bl${isPaid ? ' paid' : ''}" data-bid="${b.id}"><div class="n">${esc(b.n)} ${date ? `<i>· ${date}</i>` : `<button type="button" class="addlink" data-act="bmenu" data-id="${b.id}" data-v="due">+ date</button>`}
+        ${isPaid ? `<button type="button" class="info" data-tip="${b.paid ? 'You marked this as paid (⋯ → Not paid yet to undo).' : 'The due day has gone, so it should be paid. Check your bank app that it came out.'}">ⓘ</button>` : ''}</div>
+        <div class="s">${b.cat ? esc(b.cat) : `<button type="button" class="addlink" data-act="bmenu" data-id="${b.id}" data-v="cat">+ category</button>`} · avg ${fmt(b.avg)}</div>
+        <div class="side"><button type="button" class="amt" data-act="bmenu" data-id="${b.id}" data-v="amount">${fmt(b.a)}</button>
+          <button type="button" class="more box" data-act="bmenu" data-id="${b.id}" aria-label="More for ${esc(b.n)}">⋯</button>${diffPill(b.a, b.avg)}</div></div>`; };
+    const potRows = r.pots.map(p => { const over = p.a > 0 && p.spent > p.a;
+      return p.a > 0 ? `<div class="potrow${over ? ' over' : ''}"><span class="n">${esc(p.n)}</span><span class="v">${fmt(p.spent)} / ${fmt(p.a)}</span>
+        <span class="s">Pots · ${over ? fmt(p.spent - p.a) + ' over' : fmt(p.a - p.spent) + ' left'}</span><div class="pbar"><i style="width:${Math.min(100, 100 * p.spent / p.a)}%"></i></div></div>`
+        : `<div class="potrow"><span class="n">${esc(p.n)}</span><button type="button" class="ulink v" style="border:0;color:var(--bill)" data-act="potset" data-n="${esc(p.n)}">Add</button><span class="s">Pots · monthly amount</span></div>`; }).join('');
+    const billCats = (() => { const g = {}; live.forEach(b => { const k = b.cat || 'Unsorted'; g[k] = (g[k] || 0) + b.a; }); if (r.potsSet) g.Pots = r.potsSet; return Object.entries(g).sort((a, b) => b[1] - a[1]); })();
+    const bmax = Math.max(1, ...billCats.map(x => x[1]));
+    const total = r.bills + r.potsSet, totalAvg = r.billsAvg + r.potsSet;
+    const billsIn = `<div class="bar2"><span>${live.length} ${live.length === 1 ? 'bill' : 'bills'}</span><div class="seg b"><button type="button" data-act="bview" data-v="all" class="${S.billView === 'all' ? 'on' : ''}">All</button><button type="button" data-act="bview" data-v="cat" class="${S.billView === 'cat' ? 'on' : ''}">Categories</button></div></div>
+      ${S.billView === 'all' ? live.map(brow).join('') + potRows
+        : `<div class="catv">${billCats.map(([k, v]) => `<div class="cr"><b>${esc(k)}</b><b>${fmt(v)}</b><div class="cb"><i style="width:${100 * v / bmax}%;background:var(--${k === 'Pots' ? 'pot' : 'bill'})"></i></div></div>`).join('')}</div>`}
+      ${paused.length ? `<div class="paused${pausedOpen ? ' open' : ''}"><button type="button" data-act="pausedfold">${CHEV} ⏸ ${paused.length} paused · ${fmt(paused.reduce((s, b) => s + b.a, 0))} not counted</button>
+        <div class="pl">${paused.map(b => `<div class="pr"><span>${esc(b.n)}</span><span>${fmt(b.a)}</span><button type="button" class="chip" data-act="resume" data-id="${b.id}">▶ Resume</button></div>`).join('')}</div></div>` : ''}
+      <div class="btotal"><b>Total</b><span class="v">${fmt(total)}</span><small>avg ${fmt(totalAvg)}</small>${diffPill(total, totalAvg)}</div>
+      <form class="addform bill" data-form="bill" autocomplete="off"><input name="a" inputmode="decimal" placeholder="12.99" aria-label="Amount"><input name="n" placeholder="New bill" aria-label="Bill name"><button type="submit">Add</button></form>
+      <div class="note">Tap an amount to change it: it carries over to next month. Spare cash updates as you type.</div>`;
+
+    // Last month's spending
+    const lastBills = 1183.73, lastBillsAvg = 1179.42;
+    const lastIn = `<div class="lrow"><span class="n"><i class="dot bill"></i>Bills</span><span class="v k-bill">${fmt(lastBills)}</span><span class="s">In the Bills card · avg ${fmt(lastBillsAvg)}</span>${diffPill(lastBills, lastBillsAvg)}</div>`
+      + LAST.map((l, i) => `<div class="lrow${openLast.has(i) ? ' open' : ''}" id="${i === 0 ? 't-last' : ''}"><span class="n">${esc(l.n)}</span><span class="v">${fmt(l.v)}</span>
+        <span class="s">${l.shops.map(s => s[0]).join(', ')} · avg ${fmt(l.avg)}</span>${diffPill(l.v, l.avg)}
+        <button type="button" class="opn" data-act="lastopen" data-i="${i}" aria-expanded="${openLast.has(i)}">${DOWN}${l.shops.length}</button>
+        <div class="kids"><div>${l.shops.map(s => `<div class="kid"><span>${esc(s[0])}</span><span>${fmt(s[1])}<button type="button" class="tb" data-act="tobill" data-n="${esc(s[0])}" data-a="${s[1]}" data-c="${esc(l.n)}">→ Bill</button></span></div>`).join('')}</div></div></div>`).join('')
+      + `<div class="ltot"><span>Total</span><span>${fmt(lastBills + LAST.reduce((s, l) => s + l.v, 0))}</span></div>`;
+
+    // Spending by category
+    const now = {}; S.spends.forEach(s => { const k = s.cat || 'Unsorted'; now[k] = (now[k] || 0) + s.a; });
+    const keys = [...new Set([...Object.keys(USUAL), ...Object.keys(now)])].sort((a, b) => (USUAL[b] || 0) - (USUAL[a] || 0));
+    const catsIn = keys.map(k => `<div class="crow${openCat.has(k) ? ' open' : ''}" id="${k === 'Food shopping' ? 't-cats' : ''}"><button type="button" data-act="catopen" data-k="${esc(k)}" aria-expanded="${openCat.has(k)}">${CHEV}
+        <span><b>${esc(k)}</b><small>now ${fmt(now[k] || 0)} · usual ${fmt(USUAL[k] || 0)}</small></span>${diffPill(now[k] || 0, USUAL[k] || 0)}</button>
+        <div class="kids"><div>${S.spends.filter(s => (s.cat || 'Unsorted') === k).map(s => `<div class="kid"><span>${esc(s.n)}</span><span>${fmt(s.a)}</span></div>`).join('') || '<div class="kid"><span>Nothing yet this month</span></div>'}</div></div></div>`).join('');
+
+    // 6 months, 12 months and this year
+    const tile = (n, a, b, c, cls) => `<div class="tile${cls ? ' ' + cls : ''}"><b>${n}</b><div class="cols"><div><small>Last 6 months</small><span>${fmt(a)}</span></div><div><small>Last 12 months</small><span>${fmt(b)}</span></div><div><small>2024 so far</small><span>${fmt(c)}</span></div></div></div>`;
+    const periodsIn = `<div class="tiles" id="t-periods">${tile('Wage', 7500, 7500, 7500)}${tile('Bills', 3538.25, 3538.25, 3538.25)}${tile('Spending', 1294, 1294, 1294)}${tile('Left over', 2667.75, 2667.75, 2667.75, 'left')}</div>`;
+
+    $('scroll').innerHTML = top
+      + card('spend', 'Add a spend', spendIn)
+      + card('pots', 'Monthly pots', potsIn)
+      + card('card', 'Credit card', cardIn)
+      + card('bills', 'Bills (every month)', billsIn)
+      + card('last', "Last month's spending", lastIn, '25 Sep 2024 to 24 Oct 2024')
+      + card('cats', 'Spending by category', catsIn, 'This month so far vs the average of your saved months. Tap one to see inside.')
+      + card('periods', '6 months, 12 months and this year', periodsIn)
+      + `<div class="foot">Everything is kept in this phone's browser, nowhere else. Save a backup now and then (Settings).</div>`;
+    rollNumbers();
+    if (firstPaint) { firstPaint = false; setTimeout(render, reduce ? 0 : 250); }
+    placeHotspots();
+  }
+
+  // numbers roll from their last value
+  const lastVal = new Map();
+  function rollNumbers() {
+    document.querySelectorAll('#scroll [data-roll]').forEach((el, i) => {
+      const to = +el.dataset.roll, key = i, from = lastVal.has(key) ? lastVal.get(key) : to; lastVal.set(key, to);
+      if (reduce || Math.abs(from - to) < .005) return;
+      const t0 = performance.now(), d = 700;
+      const step = t => { const k = Math.min((t - t0) / d, 1), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+      el.textContent = fmt(from); requestAnimationFrame(step);
+    });
+  }
+
+  // ---------- tips ----------
+  const TIPS = [
+    { t: 'Spare cash left', p: 'The one number that matters: what is really left until payday, after every bill and spend.', q: '#t-big' },
+    { t: 'The ring', p: 'Blue is bills, orange is pots, gold is spends, mint is what is spare. The middle shows the spare part.', q: '#t-ring' },
+    { t: 'Change your pay', p: 'Tap Pay, or the little arrow under the header, to start a new month with a new pay.', q: '#t-pay' },
+    { t: 'Starting vs Actual spare', p: 'Starting spare is your plan for the month. Actual spare is what is left right now.', q: '#t-start' },
+    { t: 'Credit card', p: 'Kept apart from spare cash. The ring shows how much of the limit you have used.', q: '#t-zopa' },
+    { t: 'Paid or Upcoming', p: 'Paid is gone already. Upcoming is money you know is coming out, so it counts against spare now.', q: '#t-when' },
+    { t: '+ category', p: 'Give a spend a category. If it matches a pot, the spend comes out of that pot.', q: '#scroll .row.nocat', alt: '#card-spend' },
+    { t: 'Monthly pots', p: 'Set an amount for things like shopping or fuel. The bar fills as you spend. Over comes off spare.', q: '#scroll .potrow', alt: '#card-bills' },
+    { t: 'Green tick', p: 'A bill turns green once its due day has gone. Check your bank app that it really came out.', q: '#scroll .bl.paid', alt: '#card-bills' },
+    { t: 'The ⋯ menu', p: 'Change the amount, mark it paid, set the due day, pause it, or delete it.', q: '#scroll .bl .side', alt: '#card-bills' },
+    { t: 'Up or down on last month', p: 'Red means you spent more than usual, green means less. Tap ⌄ to see the shops.', q: '#t-last', alt: '#card-last' },
+    { t: 'New month', p: 'This little arrow starts a new month. Bills start again and paid spends clear.', q: '#t-tab' },
+  ];
+  const found = new Set(); let tipOn = false, curTip = null;
+  function drawTipList() {
+    $('tlist').innerHTML = TIPS.map((t, i) => `<button type="button" class="tl${found.has(i) ? ' found' : ''}" data-ti="${i}"><span class="num">${i + 1}</span><span><b>${found.has(i) ? esc(t.t) : 'Not found yet'}</b>${found.has(i) ? esc(t.p) : 'Turn on tip mode and look for dot ' + (i + 1) + '.'}</span></button>`).join('');
+    $('ptext').innerHTML = `You've found <b>${found.size} of ${TIPS.length}</b> tips`;
+    $('pbar').style.width = (100 * found.size / TIPS.length) + '%';
+    $('tcnt').textContent = found.size + '/' + TIPS.length;
+    const all = found.size === TIPS.length;
+    $('allmsg').hidden = !all; $('tipbox').classList.toggle('all', all); $('phone').classList.toggle('win', all);
+    $('tlist').querySelectorAll('.tl').forEach(b => b.onclick = () => { if (!tipOn) { $('tipmode').checked = true; setTipMode(true); } showTip(+b.dataset.ti); });
+  }
+  const tipTarget = i => document.querySelector(TIPS[i].q) || (TIPS[i].alt && document.querySelector(TIPS[i].alt));
+  function placeHotspots() {
+    document.querySelectorAll('.hs').forEach(h => h.remove());
+    if (!tipOn) return;
+    TIPS.forEach((t, i) => { const el = tipTarget(i); if (!el) return;
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      el.insertAdjacentHTML('beforeend', `<button type="button" class="hs${found.has(i) ? ' found' : ''}" data-act="hs" data-i="${i}" aria-label="Tip ${i + 1}: ${esc(t.t)}" style="animation-delay:${reduce ? 0 : i * 40}ms, ${1000 + i * 120}ms">${i + 1}</button>`); });
+    if (curTip !== null) { const el = tipTarget(curTip); if (el) el.classList.add('hl'); }
+  }
+  function setTipMode(on) {
+    tipOn = on;
+    if (on) Object.keys(S.open).forEach(k => S.open[k] = k === 'card' || k === 'periods' ? S.open[k] : true);
+    if (!on) hideTip();
+    render();
+    if (on && matchMedia('(max-width: 1099px)').matches) closeSheet();
+  }
+  function showTip(i) {
+    hideTip(true); curTip = i;
+    const el = tipTarget(i); if (!el) return;
+    const sc = $('scroll'), y = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+    sc.scrollTo({ top: Math.max(y - 120, 0), behavior: reduce ? 'auto' : 'smooth' });
+    el.classList.add('hl');
+    const first = !found.has(i); found.add(i);
+    const tc = $('tcard');
+    tc.innerHTML = `<div class="k">Tip ${i + 1} of ${TIPS.length}${first ? ' · new' : ''}</div><h3>${esc(TIPS[i].t)}</h3><p>${esc(TIPS[i].p)}</p>
+      <div class="tb"><button type="button" data-act="tipclose">Got it</button>${found.size < TIPS.length ? '<button type="button" class="go" data-act="tipnext">Next tip</button>' : ''}</div>`;
+    tc.style.top = 'auto'; tc.style.bottom = '18px';
+    setTimeout(() => { const er = el.getBoundingClientRect(), sr = $('screen').getBoundingClientRect();
+      if (er.bottom > sr.bottom - 190) { tc.style.bottom = 'auto'; tc.style.top = '46px'; } tc.classList.add('on'); }, reduce ? 0 : 320);
+    drawTipList();
+    document.querySelectorAll(`.hs[data-i="${i}"]`).forEach(h => h.classList.add('found'));
+  }
+  function hideTip(keep) { $('tcard').classList.remove('on'); document.querySelectorAll('.hl').forEach(e => e.classList.remove('hl')); if (!keep) curTip = null; }
+  $('tipmode').onchange = e => setTipMode(e.target.checked);
+
+  // ---------- floating ⓘ tips + toasts ----------
+  const tipb = $('tipb'), screen = $('screen'); let tipOwner = null, toastT;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1900); }
+  function showInfo(b) {
+    if (tipOwner === b) { tipb.classList.remove('on'); tipOwner = null; return; }
+    tipb.textContent = b.dataset.tip; tipOwner = b;
+    const sr = screen.getBoundingClientRect(), br = b.getBoundingClientRect();
+    tipb.style.left = Math.min(Math.max(br.left - sr.left - 110, 10), sr.width - 260) + 'px';
+    tipb.style.top = (br.bottom - sr.top + 6) + 'px'; tipb.classList.add('on');
+  }
+  $('scroll').addEventListener('scroll', () => { if (tipOwner) { tipb.classList.remove('on'); tipOwner = null; } closeMenu(); }, { passive: true });
+
+  // ---------- bill ⋯ menu ----------
+  const menu = $('bmenu'); let menuBill = null;
+  function openMenu(id, view, anchor) {
+    const b = S.bills.find(x => x.id === id); if (!b) return; menuBill = b;
+    const isPaid = b.paid || gone(b);
+    const back = '<button type="button" class="back" data-act="mview" data-v="main">← Back</button>';
+    const views = {
+      main: `<div class="big2"><button type="button" data-act="mview" data-v="amount">Amount</button>${isPaid ? `<button type="button" data-act="bpaid">Not paid yet</button>` : `<button type="button" class="pri" data-act="bpaid">Mark paid</button>`}</div>
+        <button type="button" class="mi" data-act="mview" data-v="name">Change name</button><button type="button" class="mi" data-act="mview" data-v="due">Due day</button>
+        <button type="button" class="mi" data-act="mview" data-v="cat">Category</button><button type="button" class="mi" data-act="bcard">${b.paysCard ? 'Pays a credit card ✓' : 'Pays a credit card'}</button>
+        <hr><div class="big2"><button type="button" data-act="bpause">${b.paused ? 'Resume' : 'Pause'}</button><button type="button" class="stop" data-act="mview" data-v="del">Delete</button></div>`,
+      amount: `<div class="mh">New amount for ${esc(b.n)}</div><form class="mf" data-form="bamount"><input name="v" inputmode="decimal" value="${b.a.toFixed(2)}" aria-label="Amount"><button type="submit">Save</button></form>${back}`,
+      name: `<div class="mh">Change name</div><form class="mf" data-form="bname"><input name="v" value="${esc(b.n)}" aria-label="Name"><button type="submit">Save</button></form>${back}`,
+      due: `<div class="mh">Due day</div><div class="days">${Array.from({ length: 31 }, (_, i) => `<button type="button" data-act="bdue" data-v="${i + 1}" class="${b.d === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}<button type="button" class="vary${b.d === 'varies' ? ' on' : ''}" data-act="bdue" data-v="varies">Varies</button></div>${back}`,
+      cat: `<div class="mh">Category</div><div class="chips">${CATS.map(c => `<button type="button" class="chip" data-act="bcat" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>${back}`,
+      del: `<div class="mh">Delete ${esc(b.n)}? It leaves your bills for good.</div><div class="big2"><button type="button" data-act="mview" data-v="main">Cancel</button><button type="button" class="stop" data-act="bdel">Delete</button></div>`,
+    };
+    menu.innerHTML = views[view || 'main'];
+    if (anchor) {
+      const sr = screen.getBoundingClientRect(), ar = anchor.getBoundingClientRect();
+      menu.style.left = Math.max(10, Math.min(ar.right - sr.left - 270, sr.width - 280)) + 'px';
+      const below = ar.bottom - sr.top + 6;
+      menu.style.top = (below + 330 > sr.height ? Math.max(40, ar.top - sr.top - 330) : below) + 'px';
+    }
+    menu.classList.add('on');
+    const inp = menu.querySelector('input'); if (inp) setTimeout(() => { inp.focus({ preventScroll: true }); inp.select(); }, 60);
+  }
+  function closeMenu() { menu.classList.remove('on'); menuBill = null; }
+
+  // ---------- one click handler for the whole page ----------
+  document.addEventListener('click', e => {
+    const info = e.target.closest('.info');
+    if (info && screen.contains(info)) { showInfo(info); return; }
+    if (tipOwner) { tipb.classList.remove('on'); tipOwner = null; }
+    const a = e.target.closest('[data-act]');
+    if (!a) { if (!e.target.closest('.menu')) closeMenu(); if (!e.target.closest('.tcard') && !e.target.closest('.tl')) hideTip(); return; }
+    const act = a.dataset.act, id = +a.dataset.id;
+    if (act !== 'mview' && !act.startsWith('b') && act !== 'bmenu') closeMenu();
+    const sp = S.spends.find(s => s.id === id);
+    switch (act) {
+      case 'fold': S.open[a.dataset.k] = !S.open[a.dataset.k]; render(); break;
+      case 'toast': toast(a.dataset.msg); break;
+      case 'payday': openPayday(); break;
+      case 'mode': S.mode = a.dataset.v; render(); break;
+      case 'sview': S.spendView = a.dataset.v; render(); break;
+      case 'bview': S.billView = a.dataset.v; render(); break;
+      case 'spendpaid': sp.up = false; sp.when = '6 Nov 2024'; render(); toast('Marked as paid'); break;
+      case 'spenddel': S.spends = S.spends.filter(s => s !== sp); render(); toast('Spend removed'); break;
+      case 'spendcat': { const row = a.closest('.row'); if (row.querySelector('.chips')) { render(); break; }
+        row.insertAdjacentHTML('beforeend', `<div class="chips" style="grid-column:1/-1;padding-top:8px">${CATS.slice(4).concat(S.pots.map(p => p.n)).filter((v, i, x) => x.indexOf(v) === i).map(c => `<button type="button" class="chip" data-act="setcat" data-id="${id}" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>`); break; }
+      case 'setcat': sp.cat = a.dataset.v; render(); break;
+      case 'potdel': S.pots = S.pots.filter(p => p.n !== a.dataset.n); render(); break;
+      case 'potset': { const inp = document.createElement('input'); inp.className = 'setamt'; inp.inputMode = 'decimal'; inp.placeholder = '100'; inp.setAttribute('aria-label', 'Monthly amount');
+        a.replaceWith(inp); inp.focus(); const done = () => { const v = num(inp.value); const p = S.pots.find(x => x.n === a.dataset.n); if (p && v > 0) p.a = v; render(); };
+        inp.onkeydown = ev => { if (ev.key === 'Enter') done(); if (ev.key === 'Escape') render(); }; inp.onblur = done; break; }
+      case 'cardoff': cardAdd(-1); break;
+      case 'carddel': S.card.splice(+a.dataset.i, 1); render(); break;
+      case 'bmenu': openMenu(id, a.dataset.v, a); break;
+      case 'mview': openMenu(menuBill.id, a.dataset.v); break;
+      case 'bpaid': menuBill.paid = !(menuBill.paid || gone(menuBill)); if (!menuBill.paid && gone(menuBill)) menuBill.paid = false; closeMenu(); render(); toast(menuBill === null ? '' : 'Updated'); break;
+      case 'bcard': menuBill.paysCard = !menuBill.paysCard; toast(menuBill.paysCard ? menuBill.n + ' pays the Zopa card' : 'No longer a card payment'); closeMenu(); break;
+      case 'bpause': { const b = menuBill; b.paused = !b.paused; closeMenu(); render(); toast(b.paused ? b.n + ' paused: not counted' : b.n + ' counted again'); break; }
+      case 'bdue': menuBill.d = a.dataset.v === 'varies' ? 'varies' : +a.dataset.v; closeMenu(); render(); break;
+      case 'bcat': menuBill.cat = a.dataset.v; closeMenu(); render(); break;
+      case 'bdel': { const n = menuBill.n; S.bills = S.bills.filter(b => b !== menuBill); closeMenu(); render(); toast(n + ' deleted'); break; }
+      case 'resume': S.bills.find(b => b.id === id).paused = false; render(); break;
+      case 'pausedfold': pausedOpen = !pausedOpen; render(); break;
+      case 'lastopen': { const i = +a.dataset.i; openLast.has(i) ? openLast.delete(i) : openLast.add(i); a.closest('.lrow').classList.toggle('open'); a.setAttribute('aria-expanded', openLast.has(i)); break; }
+      case 'catopen': { const k = a.dataset.k; openCat.has(k) ? openCat.delete(k) : openCat.add(k); a.closest('.crow').classList.toggle('open'); a.setAttribute('aria-expanded', openCat.has(k)); break; }
+      case 'tobill': S.bills.push({ id: ++S.nid, n: a.dataset.n, d: null, cat: a.dataset.c, a: +a.dataset.a, avg: +a.dataset.a }); S.open.bills = true; render(); toast(a.dataset.n + ' added to Bills'); break;
+      case 'hs': showTip(+a.dataset.i); break;
+      case 'tipclose': hideTip(); break;
+      case 'tipnext': { const nx = TIPS.findIndex((_, i) => !found.has(i)); if (nx >= 0) showTip(nx); break; }
+    }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeMenu(); hideTip(); closeSheet(); } });
+
+  // forms inside the phone
+  const bad = f => { f.classList.remove('bad'); void f.offsetWidth; f.classList.add('bad'); };
+  function cardAdd(sign) { const f = document.querySelector('[data-form="card"]'), a = num(f.a.value), n = f.n.value.trim() || (sign < 0 ? 'Paid off' : '');
+    if (!(a > 0) || !n) return bad(f); S.card.unshift({ n, a: sign * a, when: '6 Nov 2024' }); render(); }
+  document.addEventListener('submit', e => {
+    const f = e.target, kind = f.dataset.form; if (!kind) return; e.preventDefault();
+    const a = f.a ? num(f.a.value) : NaN, n = f.n ? f.n.value.trim() : '', v = f.v ? f.v.value.trim() : '';
+    if (kind === 'spend') { if (!(a > 0) || !n) return bad(f); S.spends.unshift({ id: ++S.nid, n, a, cat: guess(n), up: S.mode === 'up', when: '6 Nov 2024' }); render(); flashPart('#stcard'); }
+    if (kind === 'pot') { if (!n || S.pots.some(p => p.n.toLowerCase() === n.toLowerCase())) return bad(f); S.pots.push({ n, a: a > 0 ? a : 0 }); if (!CATS.includes(n)) CATS.push(n); render(); }
+    if (kind === 'card') cardAdd(1);
+    if (kind === 'bill') { if (!(a > 0) || !n) return bad(f); S.bills.push({ id: ++S.nid, n, d: null, cat: '', a, avg: a }); render(); toast(n + ' added. Tap + date to set its day'); }
+    if (kind === 'bamount') { const x = num(v); if (!(x >= 0)) return bad(f); menuBill.a = x; closeMenu(); render(); toast('Amount saved'); }
+    if (kind === 'bname') { if (!v) return bad(f); menuBill.n = v; closeMenu(); render(); }
+  });
+
+  // ---------- new month ----------
+  function newMonth() {
+    const before = compute();
+    S.left = Math.max(Math.round(before.actual * 100) / 100, 0);
+    S.spends = S.spends.filter(s => s.up); S.bills.forEach(b => b.paid = false);
+    $('flashamt').textContent = '+ ' + fmt(S.pay);
+    const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+    $('scroll').scrollTo({ top: 0 });
+    setTimeout(render, reduce ? 0 : 800);
+  }
+  function openPayday() { newMonth(); toast('New month started. Left over carried in'); }
+
+  // ---------- scenarios ----------
+  const SCN = [
+    { ic: '💷', t: 'Payday lands', s: 'Start a new month. What was spare comes with you.', go: () => newMonth(), at: '#stcard' },
+    { ic: '🛒', t: 'Big Tesco shop', s: 'Add £85.40 at Tesco, in Food shopping.', go: () => S.spends.unshift({ id: ++S.nid, n: 'Tesco', a: 85.40, cat: 'Food shopping', when: '6 Nov 2024' }), at: '#card-spend', open: 'spend' },
+    { ic: '🏠', t: 'Rent goes up £20', s: 'The landlord puts rent up from next month.', go: () => { const r = S.bills.find(b => b.n === 'Rent'); if (r) r.a = +(r.a + 20).toFixed(2); }, at: '#card-bills', open: 'bills' },
+    { ic: '⛽', t: 'Fuel pot runs over', s: 'A £120 fill-up on top of the £60 already spent.', go: () => S.spends.unshift({ id: ++S.nid, n: 'Shell', a: 120, cat: 'Fuel', when: '6 Nov 2024' }), at: '#card-pots', open: 'pots' },
+    { ic: '💳', t: 'Pay off the credit card', s: 'Clear the £45 on the Zopa card.', go: () => { const u = compute().used; if (u > 0) S.card.unshift({ n: 'Paid off', a: -u, when: '6 Nov 2024' }); }, at: '#t-zopa', open: 'card' },
+    { ic: '⏸', t: 'Pause Netflix', s: 'Take a month off. It stops counting.', go: () => { const b = S.bills.find(x => x.n === 'Netflix'); if (b) b.paused = true; }, at: '#card-bills', open: 'bills' },
+  ];
+  const done = new Map();
+  function drawScn() {
+    $('scn').innerHTML = SCN.map((s, i) => { const d = done.get(i);
+      return `<button type="button" class="sc${d ? ' done' : ''}" data-si="${i}"><span class="ic">${d ? '✓' : s.ic}</span><b>${s.t}</b><small>${s.s}</small>
+        ${d ? `<span class="res">${d.map(c => `<span class="chg ${c.cls}">${c.txt}</span>`).join('')}</span>` : ''}</button>`; }).join('');
+    $('scn').querySelectorAll('.sc').forEach(b => b.onclick = () => runScn(+b.dataset.si));
+  }
+  // the thumb: scroll the phone with a thumb print pushing the glass
+  const handW = window.Hand ? Hand.wrap($('phone')) : null;
+  if (window.Hand) Hand.follow($('screen'), $('scroll'), handW);
+  function thumbScroll(top) {
+    const sc = $('scroll'), H = $('screen').clientHeight, dn = top > sc.scrollTop + 4, up = top < sc.scrollTop - 4;
+    if ((dn || up) && window.Hand && !reduce) { Hand.press(handW, true); setTimeout(() => Hand.press(handW, false), 700);
+      Hand.print($('screen'), { y0: dn ? H * .78 : H * .3, y1: dn ? H * .32 : H * .76, dur: 900, dx: dn ? -12 : 10 }); }
+    setTimeout(() => sc.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' }), reduce ? 0 : 120);
+  }
+  if (!reduce) { setTimeout(() => thumbScroll(320), 1600); setTimeout(() => thumbScroll(0), 3600); }
+  function flashPart(q) { const el = document.querySelector(q); if (!el) return; el.classList.remove('flashhl'); void el.offsetWidth; el.classList.add('flashhl'); }
+  function runScn(i) {
+    const s = SCN[i], before = compute();
+    if (s.open) S.open[s.open] = true;
+    closeMenu(); hideTip();
+    s.go(); render();
+    const after = compute(), chg = [];
+    const push = (label, d, flip) => { if (Math.abs(d) < .005) return; chg.push({ cls: (d > 0) !== !!flip ? 'up' : 'down', txt: `${label} ${sgn(d)}` }); };
+    if (i === 0) { chg.push({ cls: 'up', txt: 'Pay in ' + fmt(S.pay) }); push('Left carried', S.left); }
+    else { push('Spare', after.actual - before.actual); push('Card free', after.free - before.free);
+      if (after.potsOver > before.potsOver) chg.push({ cls: 'down', txt: 'Fuel over ' + fmt(after.potsOver) });
+      if (Math.abs(after.actual - before.actual) < .005) chg.push({ cls: 'same', txt: 'Spare unchanged' }); }
+    if (!chg.length) chg.push({ cls: 'same', txt: 'Nothing left to change' });
+    done.set(i, chg); drawScn();
+    setTimeout(() => { const el = document.querySelector(s.at); if (!el) return; const sc = $('scroll');
+      thumbScroll(Math.max(el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 12, 0));
+      flashPart(s.at); }, i === 0 ? (reduce ? 0 : 850) : 60);
+    if (matchMedia('(max-width: 1099px)').matches) closeSheet();
+  }
+
+  // ---------- bottom sheet (narrow screens) ----------
+  let curTab = null;
+  function closeSheet() { document.body.classList.remove('sheet-open'); document.querySelectorAll('.sheettabs button').forEach(b => b.classList.remove('on')); curTab = null; }
+  document.querySelectorAll('.sheettabs button').forEach(b => b.onclick = () => {
+    if (curTab === b.dataset.tab) return closeSheet();
+    curTab = b.dataset.tab;
+    document.querySelectorAll('.rail').forEach(r => r.classList.toggle('cur', r.id === curTab));
+    document.querySelectorAll('.sheettabs button').forEach(x => x.classList.toggle('on', x === b));
+    document.body.classList.add('sheet-open');
+  });
+
+  // ---------- reset ----------
+  $('reset').onclick = () => { S = START(); openLast.clear(); openCat.clear(); pausedOpen = false; done.clear(); found.clear();
+    $('tipmode').checked = false; tipOn = false; hideTip(); closeMenu(); drawScn(); drawTipList(); render(); $('scroll').scrollTo({ top: 0 }); toast('Back to the start'); };
+
+  drawScn(); drawTipList(); render();
+})();
+</script>
+</body>
+</html>

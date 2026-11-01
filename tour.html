@@ -71,6 +71,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .vr { display: flex; gap: 6px; align-items: center; font-size: 10px; color: var(--muted); }
 .bell { position: relative; width: 28px; height: 26px; border: 1px solid var(--border); background: var(--card); border-radius: 8px; display: grid; place-items: center; color: var(--spend); }
 .bell b { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; border-radius: 99px; background: var(--bad); color: #fff; font-size: 9px; line-height: 16px; text-align: center; }
+/* the little arrow under the header opens New payday (like the real app) */
+.tabbar { position: relative; height: 1px; background: var(--border); margin: 0 2px 14px; }
+.tabbar .tab { position: absolute; left: 50%; top: -9px; translate: -50% 0; width: 34px; height: 18px; border-radius: 99px; border: 1px solid var(--border); background: #0f1513; color: var(--muted); display: grid; place-items: center; transition: border-color .3s, color .3s; }
+.tabbar .tab svg { transition: transform .35s var(--ease); }
+.tabbar.open .tab { border-color: var(--mint); color: var(--mint); }
+.tabbar.open .tab svg { transform: rotate(180deg); }
+.newpay { display: grid; grid-template-rows: 0fr; padding: 0 14px; border-width: 0; margin-bottom: 0; transition: grid-template-rows .5s var(--ease), padding .5s var(--ease), margin .5s var(--ease); }
+.newpay > div { min-height: 0; overflow: hidden; }
+.newpay.open { grid-template-rows: 1fr; padding: 14px; border-width: 1px; border-color: var(--mint); margin-bottom: 10px; }
+.np-h { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
+.np-h b { font-size: 14px; } .np-h span { font-size: 10px; font-weight: 700; border: 1px solid var(--border); border-radius: 99px; padding: 3px 8px; white-space: nowrap; }
+.np-f { display: grid; grid-template-columns: 1fr 1fr .8fr; gap: 6px; }
+.np-f label { display: grid; gap: 3px; font-size: 8.5px; font-weight: 800; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
+.np-f i { font-style: normal; font-size: 12px; font-weight: 700; color: var(--text); background: #0b100f; border: 1px solid var(--border); border-radius: 8px; padding: 7px 8px; letter-spacing: 0; text-transform: none; }
+.np-tip { font-size: 10px; color: var(--muted); margin: 7px 0 9px; line-height: 1.4; }
+.np-go { text-align: center; font-size: 12px; font-weight: 800; color: #062019; background: var(--mint); border-radius: 9px; padding: 8px; }
 .c { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 10px; transition: box-shadow .4s, border-color .4s; }
 .lbl { font-size: 10px; font-weight: 800; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; }
 .sth { display: flex; justify-content: space-between; gap: 8px; }
@@ -196,6 +212,13 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
             <div data-t="brand2"><div class="nm">Where's My Money?</div><div class="tg">Payday to payday · Lite</div></div>
             <div class="aside" data-t="menu"><span class="setb">⚙ Settings</span><div class="vr"><span class="bell">🔔<b>3</b></span>demo.v0.59</div></div>
           </div>
+          <div class="tabbar" id="tabbar"><span class="tab" data-t="tab"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 6.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span></div>
+          <div class="c newpay" id="newpay" data-t="newpay"><div>
+            <div class="np-h"><b>New payday?</b><span>📅 28 Nov · in 27 days</span></div>
+            <div class="np-f"><label>Pay<i>2500.00</i></label><label>Left from last month<i>0.00</i></label><label>Payday<i>28th</i></label></div>
+            <div class="np-tip">💡 Last month's spare was £0.00. Not right? Type what's really left. Please check this each month.</div>
+            <div class="np-go">Work it out</div>
+          </div></div>
           <div class="c" data-t="spare">
             <div class="sth">
               <div><div class="lbl">Spare cash left ⓘ</div><div class="big" id="big">£1,209.57</div>
@@ -286,6 +309,7 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
     { t: 'spare', tag: 'Spare cash', h: n => `This is the one number, ${n}.`, p: 'Spare cash left: what is really yours until next payday, after bills and spends. Everything else on this screen explains it.', tr: 'Look: £1,209.57' },
     { t: 'spare', sub: '#ring', tag: 'The ring', h: () => 'Where the money went, at a glance.', p: 'Blue is bills, orange is pots, gold is spends, mint is what is spare. The number in the middle is your spare as a share of your pay.', tr: '48% still spare' },
     { t: 'rows', tag: 'Pay and left', h: () => 'Tap your pay to change it.', p: 'Pay and what was left from last month go in at the top. The dotted underline means you can tap it.', tr: 'Dotted line = tappable' },
+    { t: 'newpay', tag: 'New payday', h: () => 'Payday? Tap the little arrow.', p: 'The arrow under the header opens New payday. Type your pay and what was really left last month, check the date, then Work it out.', tr: 'Tap the arrow to open it' },
     { t: 'start', tag: 'Plan vs real', h: () => 'Starting spare is the plan.', p: 'Starting spare is pay minus bills and pots, the plan for the month. Actual spare is what is really left today.', tr: '£766.27 planned · £1,209.57 now' },
     { t: 'zopa', tag: 'Credit card', h: () => 'Your credit card, kept apart.', p: 'Type what goes on the card. It shows how much of the limit is used and what is free. It never muddles your spare cash.', tr: '9% of £500 used' },
     { t: 'spend', tag: 'Spends', h: () => 'Add a spend in two taps.', p: 'Amount, a name, Add. Mark it Paid, or Upcoming if it has not gone out yet. Upcoming spends still count against spare.', tr: 'Paid · Upcoming' },
@@ -363,7 +387,7 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
     const top = er.top - ar.top, maxOff = Math.max(0, app.offsetHeight - visH);
     let want = off;
     if (top - off < 10 || top + er.height - off > visH - 20 || top - off > visH * .5) want = Math.min(maxOff, Math.max(0, top - 70));
-    if (['spare', 'menu', 'rows'].includes(s.t)) want = 0;
+    if (['spare', 'menu', 'rows', 'newpay'].includes(s.t)) want = 0;
     if (Math.abs(want - off) < 4) return false;
     const dn = want > off, H = scr.clientHeight; off = want;
     app.style.transform = `translateY(${-off}px)`;
@@ -384,9 +408,15 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
     $('ptag').textContent = s.tag; $('ptitle').textContent = s.h(NAME); $('ptry').textContent = '▸ ' + s.tr;
     $('pips').querySelectorAll('button').forEach((b, n) => { b.classList.toggle('on', n === k); if (n < k) b.classList.add('seen'); });
     $('back').disabled = k === 0; $('next').textContent = k === STEPS.length - 1 ? 'Finish' : 'Next';
+    const np = s.t === 'newpay', wasOpen = $('newpay').classList.contains('open');
+    if (!np && wasOpen) { $('newpay').style.transition = 'none'; void $('newpay').offsetHeight; }   // close at once so the next part is measured in its real place
+    $('newpay').classList.toggle('open', np); $('tabbar').classList.toggle('open', np);
+    if (!np && wasOpen) { void $('newpay').offsetHeight; $('newpay').style.transition = ''; }
+    if (np && !wasOpen && window.Hand && !reduce) { const tb = document.querySelector('[data-t="tab"]').getBoundingClientRect(), sr = $('screen').getBoundingClientRect();
+      const x = tb.left + tb.width / 2 - sr.left, y = tb.top + tb.height / 2 - sr.top; Hand.print($('screen'), { x, y0: y, y1: y, dx: 0, dur: 600 }); }
     const moved = scrollFor(s);
     clearTimeout(stepT);
-    stepT = setTimeout(() => { panel.classList.add('on'); place(s); type($('ptext'), s.p); say(s.h(NAME) + ' ' + s.p); }, reduce ? 0 : moved ? 1000 : 280);
+    stepT = setTimeout(() => { panel.classList.add('on'); place(s); type($('ptext'), s.p); say(s.h(NAME) + ' ' + s.p); }, reduce ? 0 : moved ? 1000 : np !== wasOpen ? 620 : 280);
     $('sysline').textContent = 'Online · stop ' + (k + 1);
     clearTimeout(autoT);
     if ($('auto').getAttribute('aria-pressed') === 'true' && k < STEPS.length - 1) autoT = setTimeout(() => go(k + 1), 6500);

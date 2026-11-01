@@ -74,8 +74,19 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .delta { height: 22px; font-weight: 800; font-size: 14px; }
 .delta span { display: inline-block; animation: dIn .9s var(--ease); }
 @keyframes dIn { from { opacity: 0; transform: translateY(8px); } }
-.ringrow { display: flex; gap: 18px; align-items: center; margin-top: 10px; }
-.ring { width: 110px; height: 110px; flex: none; }
+.ringrow { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
+.toph { min-width: 0; }
+.key { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.key i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin: 0 4px 0 0; vertical-align: 1px; }
+.rows { margin-top: 8px; font-size: 14px; }
+.rows .r { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--border); color: var(--muted); }
+.rows .r b { color: var(--text); transition: color .3s; }
+.rows .r .u { color: var(--text); font-weight: 700; border-bottom: 1.5px dotted currentColor; }
+.rows .r.tot { border-top: 2px solid var(--text); margin-top: 4px; color: var(--text); font-weight: 800; }
+.rows .r.tot + .r.tot { border-top: 0; }
+.rows .r.flash b { animation: rflash 1s var(--ease); }
+@keyframes rflash { 30% { background: color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 6px; } }
+.ring { width: 96px; height: 96px; flex: none; }
 .ring circle { fill: none; stroke-width: 11; transition: stroke-dasharray .7s var(--ease), stroke-dashoffset .7s var(--ease); }
 .ring .bg { stroke: var(--ring-bg); } .ring .sb { stroke: var(--bill); } .ring .sp { stroke: var(--pot); } .ring .ss { stroke: var(--spend); } .ring .sf { stroke: var(--accent); }
 .ring text { fill: var(--text); font: 800 20px var(--body); }
@@ -117,9 +128,12 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 14px; border-
   .story { grid-template-columns: 1fr; gap: 0; }
   .side { order: -1; top: calc(env(safe-area-inset-top, 0px) + 52px); z-index: 10; }
   .panel { padding: 14px 16px; border-radius: 16px; }
-  .big { font-size: 32px; }
-  .ring { width: 72px; height: 72px; }
-  .pots, .legend { display: none; }
+  .big { font-size: 30px; }
+  .ring { width: 70px; height: 70px; }
+  .pots { display: none; }
+  .delta { height: 18px; font-size: 13px; }
+  .rows { font-size: 13px; margin-top: 4px; }
+  .rows .r { padding: 4px 0; }
   .beat { min-height: 0; padding-block: 44px; }
   .beats { padding-bottom: 30vh; }
   .try { grid-template-columns: 1fr; }
@@ -160,10 +174,11 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 14px; border-
 
     <aside class="side">
       <div class="panel">
-        <div class="lbl" id="sidelbl">Spare cash left</div>
-        <div class="big" id="big">£0.00</div>
-        <div class="delta" id="delta"></div>
         <div class="ringrow">
+          <div class="toph"><div class="lbl" id="sidelbl">Spare cash left</div>
+            <div class="big" id="big">£0.00</div>
+            <div class="key" id="key"></div>
+            <div class="delta" id="delta"></div></div>
           <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
             <circle cx="50" cy="50" r="40" class="bg"/>
             <circle cx="50" cy="50" r="40" class="sb" transform="rotate(-90 50 50)"/>
@@ -172,8 +187,8 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 14px; border-
             <circle cx="50" cy="50" r="40" class="sf" transform="rotate(-90 50 50)"/>
             <text x="50" y="57" text-anchor="middle" id="pc">0%</text>
           </svg>
-          <div class="legend" id="legend"></div>
         </div>
+        <div class="rows" id="rows"></div>
         <div class="pots" id="pots"></div>
       </div>
     </aside>
@@ -252,9 +267,19 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 14px; border-
       const el = document.querySelector('.ring .' + c), len = p * C;
       el.setAttribute('stroke-dasharray', (len > 3 ? len - 2 : len) + ' ' + C); el.setAttribute('stroke-dashoffset', -st * C); st += p; });
     $('pc').textContent = Math.round(100 * f(s.spare)) + '%';
-    $('legend').innerHTML = `<div><span><i class="dot" style="background:var(--bill)"></i>Bills</span><b>${fmt(s.bills)}</b></div>
-      <div><span><i class="dot" style="background:var(--pot)"></i>Pots</span><b>${fmt(s.potSpent)}</b></div>
-      <div><span><i class="dot" style="background:var(--accent)"></i>Spare</span><b>${fmt(s.spare)}</b></div>`;
+    const pc = x => Math.round(100 * f(x)) + '%';
+    $('key').innerHTML = `<i style="background:var(--bill)"></i>Bills ${pc(s.bills)} · <i style="background:var(--pot)"></i>Pots ${pc(s.potSpent)} · <i style="background:var(--spend)"></i>Spends 0% · <i style="background:var(--accent)"></i>Spare ${pc(s.spare)}`;
+    // the app's top card: pots left = what's left in every pot, minus any pot that went over
+    const potLeft = POTS.reduce((t, p) => { const sp = s.spent[p.n] || 0; return t + (p.a - sp); }, 0);
+    const startSpare = PAY - EV.filter(e => e.k === 'bill').reduce((t, e) => t + e.a, 0) - POTS.reduce((t, p) => t + p.a, 0);
+    const rows = [['Pay', `<span class="u">${fmt(PAY)}</span>`], ['+ Left from last month', '<span class="u">Add</span>'],
+      ['<i class="dot" style="background:var(--bill)"></i>− Bills', `<b style="color:var(--bill)">${fmt(s.bills)}</b>`, 'b'],
+      ['<i class="dot" style="background:var(--spend)"></i>− Spends', `<b style="color:var(--spend)">${fmt(0)}</b>`, 's'],   // spends in a pot come off Pots left, like the app
+      ['<i class="dot" style="background:var(--pot)"></i>' + (potLeft < 0 ? 'Pots over' : 'Pots left'), `<b style="color:${potLeft < 0 ? 'var(--bad)' : 'var(--pot)'}">${fmt(potLeft)}</b>`, 'p'],
+      ['Starting spare', `<b>${fmt(startSpare)}</b>`, 'tot'], ['Actual spare', `<b>${fmt(s.spare)}</b>`, 'tot a']];
+    const old = render._rows || {};
+    $('rows').innerHTML = rows.map(([l, v, c = '']) => `<div class="r ${c.includes('tot') ? 'tot' : ''}${old[l.replace(/<[^>]+>/g, '')] !== undefined && old[l.replace(/<[^>]+>/g, '')] !== v ? ' flash' : ''}"><span>${l}</span>${v}</div>`).join('');
+    render._rows = Object.fromEntries(rows.map(([l, v]) => [l.replace(/<[^>]+>/g, ''), v]));
     $('pots').innerHTML = POTS.map(p => { const sp = s.spent[p.n] || 0, over = sp > p.a;
       return `<div class="pot"><div><span>${p.n}</span><span style="color:${over ? 'var(--bad)' : 'var(--good)'}">${over ? fmt(sp - p.a) + ' over' : fmt(p.a - sp) + ' left'}</span></div><div class="pbar"><i class="${over ? 'over' : ''}" style="width:${Math.min(100, 100 * sp / p.a)}%"></i></div></div>`; }).join('');
     $('days').querySelectorAll('i').forEach((el, i) => { el.classList.toggle('past', i < day); el.classList.toggle('now', i === day); });
@@ -265,7 +290,8 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 14px; border-
   // scroll → day: whichever beat is nearest the middle of the screen, interpolated between beats
   const beats = [...document.querySelectorAll('.beat')];
   function onScroll() {
-    const mid = innerHeight * .5; let best = null;
+    const side = document.querySelector('.side').getBoundingClientRect(), stacked = innerWidth <= 900;
+    const mid = stacked ? (side.bottom + innerHeight) / 2 : innerHeight * .5; let best = null;
     beats.forEach(b => { const r = b.getBoundingClientRect(); const c = r.top + r.height / 2; b._c = c; });
     for (let k = 0; k < beats.length; k++) {
       const b = beats[k], n = beats[k + 1];
@@ -276,7 +302,8 @@ footer { padding-block: 40px 60px; color: var(--muted); font-size: 14px; border-
         break;
       }
     }
-    beats.forEach(b => b.classList.toggle('on', Math.abs(b._c - mid) < innerHeight * .35));
+    const near = beats.reduce((a, b) => Math.abs(b._c - mid) < Math.abs(a._c - mid) ? b : a);
+    beats.forEach(b => b.classList.toggle('on', b === near));
     render(Math.max(0, Math.min(30, best ?? 0)));
   }
   addEventListener('scroll', onScroll, { passive: true }); addEventListener('resize', onScroll);

@@ -22,3 +22,6 @@ This repo = the website that shows off the Lite app. The app itself lives in DF-
 - 1 Nov: Tour New payday card (demo numbers: pay 2500.00, left 0.00, 28th, Work it out, Save a backup) OPENS on stop 3 (thumb print taps
   the pay; its line + reticle point UP at the Pay box in the card) and stays open on stop 4 'Or tap the little arrow' (t:'tab'); closed on every other stop. 11 stops.
 - 1 Nov: Tour Autoplay REMOVED (Darren). Voice + Next work together: Next stops the old line and reads the new stop. Closed New payday card = 0 height (.c.newpay).
+- 1 Nov: Month page side card = the app's FULL top card (key line, ring, Pay, Left, − Bills so far, − Spends £0 (pot spends come off
+  Pots left, like the app), Pots left/over, Starting spare £716.27, Actual spare = big number); changed rows flash. Pots bars stay (PC only).
+  Phone (≤900): card sticks on top; the day = the beat in the middle of the space UNDER the card.

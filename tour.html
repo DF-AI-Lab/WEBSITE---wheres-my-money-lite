@@ -77,9 +77,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tabbar .tab svg { transition: transform .35s var(--ease); }
 .tabbar.open .tab { border-color: var(--mint); color: var(--mint); }
 .tabbar.open .tab svg { transform: rotate(180deg); }
-.newpay { display: grid; grid-template-rows: 0fr; padding: 0 14px; border-width: 0; margin-bottom: 0; transition: grid-template-rows .5s var(--ease), padding .5s var(--ease), margin .5s var(--ease); }
+.c.newpay { display: grid; grid-template-rows: 0fr; padding: 0 14px; border-width: 0; margin-bottom: 0; transition: grid-template-rows .5s var(--ease), padding .5s var(--ease), margin .5s var(--ease); }
 .newpay > div { min-height: 0; overflow: hidden; }
-.newpay.open { grid-template-rows: 1fr; padding: 14px; border-width: 1px; border-color: var(--mint); margin-bottom: 10px; }
+.c.newpay.open { grid-template-rows: 1fr; padding: 14px; border-width: 1px; border-color: var(--mint); margin-bottom: 10px; }
 .np-h { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
 .np-h b { font-size: 14px; } .np-h span { font-size: 10px; font-weight: 700; border: 1px solid var(--border); border-radius: 99px; padding: 3px 8px; white-space: nowrap; }
 .np-f { display: grid; grid-template-columns: 1fr 1fr .8fr; gap: 6px; }
@@ -376,7 +376,11 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
     el.append(span, cur);
     typing = setInterval(() => { span.textContent = text.slice(0, ++k); if (k >= text.length) { clearInterval(typing); setTimeout(() => cur.remove(), 900); } }, 34);
   }
-  function say(text) { if (!voice) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-GB'; u.rate = 1.02; speechSynthesis.speak(u); } catch (e) {} }
+  // autoplay waits for the voice to finish (then a short pause) instead of a fixed time, so the voice is never cut off
+  const autoOn = () => $('auto').getAttribute('aria-pressed') === 'true';
+  function autoNext(k, wait) { if (k !== i) return; clearTimeout(autoT); if (autoOn() && k < STEPS.length - 1) autoT = setTimeout(() => go(k + 1), wait); }
+  function say(text, k = i) { if (!voice) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-GB'; u.rate = 1.02;
+    u.onend = () => autoNext(k, 1200); speechSynthesis.speak(u); } catch (e) { autoNext(k, 6500); } }
 
   // the app is taller than the screen: slide it so the part is in view, with a thumb print swiping the glass
   let off = 0, stepT = null;
@@ -419,12 +423,12 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
     stepT = setTimeout(() => { panel.classList.add('on'); place(s); type($('ptext'), s.p); say(s.h(NAME) + ' ' + s.p); }, reduce ? 0 : moved ? 1000 : np !== wasOpen ? 620 : 280);
     $('sysline').textContent = 'Online · stop ' + (k + 1);
     clearTimeout(autoT);
-    if ($('auto').getAttribute('aria-pressed') === 'true' && k < STEPS.length - 1) autoT = setTimeout(() => go(k + 1), 6500);
+    if (autoOn() && k < STEPS.length - 1) autoT = setTimeout(() => go(k + 1), voice ? 30000 : 6500);   // with the voice on, the end of speech moves on (30 s = safety net)
   }
   $('next').onclick = () => { if (i === STEPS.length - 1) finish(); else go(i + 1); };
   $('back').onclick = () => go(i - 1);
-  $('auto').onclick = () => { const on = $('auto').getAttribute('aria-pressed') !== 'true'; $('auto').setAttribute('aria-pressed', on); if (on && i < STEPS.length - 1) autoT = setTimeout(() => go(i + 1), 2500); else clearTimeout(autoT); };
-  $('voice').onclick = () => { voice = $('voice').getAttribute('aria-pressed') !== 'true'; $('voice').setAttribute('aria-pressed', voice); if (!voice) try { speechSynthesis.cancel(); } catch (e) {} else say(STEPS[i].h(NAME)); };
+  $('auto').onclick = () => { const on = $('auto').getAttribute('aria-pressed') !== 'true'; $('auto').setAttribute('aria-pressed', on); clearTimeout(autoT); if (on && !(voice && speechSynthesis.speaking)) autoNext(i, 2500); };
+  $('voice').onclick = () => { voice = $('voice').getAttribute('aria-pressed') !== 'true'; $('voice').setAttribute('aria-pressed', voice); if (!voice) try { speechSynthesis.cancel(); } catch (e) {} else if (i >= 0) { clearTimeout(autoT); say(STEPS[i].h(NAME) + ' ' + STEPS[i].p); } };
   addEventListener('keydown', e => { if ($('gate').classList.contains('off')) { if (e.key === 'ArrowRight') $('next').click(); if (e.key === 'ArrowLeft') go(i - 1); } });
   addEventListener('resize', () => { if (i >= 0) place(STEPS[i]); });
 

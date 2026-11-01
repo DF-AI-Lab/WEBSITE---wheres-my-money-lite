@@ -21,3 +21,4 @@ This repo = the website that shows off the Lite app. The app itself lives in DF-
 - 1 Nov: no text highlight anywhere (site.css body user-select none; inputs still selectable).
 - 1 Nov: Tour stop 4 'New payday' (now 11 stops): thumb print taps the little arrow under the header, the New payday card opens
   (demo numbers: pay 2500.00, left 0.00, 28th, Work it out); closes again on any other stop.
+- 1 Nov: Tour autoplay + voice: moves on 1.2 s after the voice ENDS (utterance onend; 30 s safety), never cuts it off. Closed New payday card = 0 height (.c.newpay).

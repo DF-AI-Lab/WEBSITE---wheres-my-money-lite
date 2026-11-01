@@ -25,3 +25,6 @@ This repo = the website that shows off the Lite app. The app itself lives in DF-
 - 1 Nov: Month page side card = the app's FULL top card (key line, ring, Pay, Left, − Bills so far, − Spends £0 (pot spends come off
   Pots left, like the app), Pots left/over, Starting spare £716.27, Actual spare = big number); changed rows flash. Pots bars stay (PC only).
   Phone (≤900): card sticks on top; the day = the beat in the middle of the space UNDER the card.
+- 1 Nov: Play: the little arrow / Pay / Left now OPEN the New payday card (S.npOpen, like the app: Pay, Left from last month
+  prefilled with spare + ✕, Payday 25th, tip, Work it out = form newpay -> newMonth(left) with the Payday flash, Save a backup = toast).
+  Arrow tapped again closes it. Scenario 'Payday lands' still starts a month straight away.

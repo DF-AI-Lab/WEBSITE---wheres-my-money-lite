@@ -133,6 +133,27 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .tab { display: flex; justify-content: center; border-top: 1px solid var(--border); margin: 0 2px 10px; position: relative; }
 .tab button { margin-top: -1px; border: 1px solid var(--border); border-top: 0; background: var(--bg); border-radius: 0 0 10px 10px; padding: 1px 12px 3px; color: var(--muted); line-height: 0; }
 
+.tab button svg { transition: transform .3s var(--ease); }
+.tab.open button { color: var(--accent); border-color: var(--accent); }
+.tab.open button svg { transform: rotate(180deg); }
+/* New payday card (opens from the little arrow, Pay or Left, like the app) */
+.np { border-color: var(--accent); animation: npin .35s var(--ease); }
+@keyframes npin { from { opacity: 0; transform: translateY(-8px); } }
+.np-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+.np-h b { font-size: 16px; } .np-h span { font-size: 12px; font-weight: 700; border: 1px solid var(--border); border-radius: 99px; padding: 4px 10px; white-space: nowrap; }
+.np-f { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, .8fr); gap: 8px; align-items: end; }
+.np-f label { display: grid; gap: 5px; font-size: 10px; font-weight: 800; letter-spacing: .06em; color: var(--muted); text-transform: uppercase; min-width: 0; }
+.np-f input { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 10px; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0; text-transform: none; }
+.np-f .lw { display: flex; gap: 5px; } .np-f .lw input { flex: 1; }
+.np-f .clr { flex: none; width: 30px; border: 1px solid var(--border); background: var(--bg); border-radius: 9px; font-weight: 800; color: var(--text); }
+.np-tip { font-size: 12px; color: var(--muted); margin: 8px 0 12px; line-height: 1.45; }
+.np-go { width: 100%; border: 0; border-radius: 12px; padding: 12px; font-weight: 800; background: var(--accent); color: var(--on-accent); }
+.np-go:active { transform: scale(.98); }
+.np-bk { width: 100%; margin-top: 10px; border: 1px solid var(--border); background: var(--row, var(--bg)); border-radius: 12px; padding: 11px; font-weight: 800; }
+.np-last { text-align: center; font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+.np.bad input { border-color: var(--bad); animation: shake .3s; }
+@media (max-width: 440px) { .np-f { gap: 6px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, .7fr); } .np-f input { padding: 10px 6px; font-size: 13.5px; } .np-f .clr { width: 24px; } .np-f label { font-size: 9px; } }
+
 /* cards */
 .c { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
 .lbl { font-size: 11px; font-weight: 800; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 4px; }
@@ -537,7 +558,17 @@ div.pot { position: relative; padding: 12px 0; border-bottom: 1px solid var(--bo
           <div class="vrow"><button class="bell" type="button" data-act="toast" data-msg="3 reminders: bills due, card, backup" aria-label="Reminders">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><b>3</b></button>
             <span class="appver">demo.v0.59</span></div></div></div>
-      <div class="tab" id="t-tab"><button type="button" data-act="payday" aria-label="Start a new month"><svg width="14" height="10" viewBox="0 0 14 10"><path d="M2 7l5-4 5 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+      <div class="tab${S.npOpen ? ' open' : ''}" id="t-tab"><button type="button" data-act="payday" aria-expanded="${!!S.npOpen}" aria-label="New payday"><svg width="14" height="10" viewBox="0 0 14 10"><path d="M2 7l5-4 5 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+      ${S.npOpen ? `<form class="c np" id="t-np" data-form="newpay" autocomplete="off">
+        <div class="np-h"><b>New payday?</b><span>📅 25 Nov · in 19 days</span></div>
+        <div class="np-f"><label>Pay<input name="a" inputmode="decimal" value="${S.pay.toFixed(2)}"></label>
+          <label>Left from last month<span class="lw"><input name="v" inputmode="decimal" value="${Math.max(r.actual, 0).toFixed(2)}"><button class="clr" type="button" data-act="npclear" aria-label="Clear">✕</button></span></label>
+          <label>Payday<input name="n" value="${ord(CYCLE.getDate())}" readonly></label></div>
+        <p class="np-tip">💡 Last month's spare was <b>${fmt(Math.max(r.actual, 0))}</b>. Not right? Type what's really left. <button class="info" type="button" data-tip="Check your bank app and type what really came over. Lite starts the new month from that.">ⓘ</button><br>Please check this each month.</p>
+        <button class="np-go" type="submit">Work it out</button>
+        <button class="np-bk" type="button" data-act="toast" data-msg="Backups save in the real app">💾 Save a backup</button>
+        <div class="np-last">Last saved 28 Oct · 9 days ago</div>
+      </form>` : ''}
       <div class="c" id="stcard"><div class="sthead">
         <div class="bigwrap" id="t-big"><div class="lbl">Spare cash left <button class="info" type="button" data-tip="This is a guide. Check your bank app to confirm what's really left. Don't rely on this app alone.">ⓘ</button></div>
           <div class="big${r.actual < 0 ? ' low' : ''}" data-roll="${r.actual}">${fmt(r.actual)}</div>
@@ -676,7 +707,7 @@ div.pot { position: relative; padding: 12px 0; border-bottom: 1px solid var(--bo
     { t: 'Green tick', p: 'A bill turns green once its due day has gone. Check your bank app that it really came out.', q: '#scroll .bl.paid', alt: '#card-bills' },
     { t: 'The ⋯ menu', p: 'Change the amount, mark it paid, set the due day, pause it, or delete it.', q: '#scroll .bl .side', alt: '#card-bills' },
     { t: 'Up or down on last month', p: 'Red means you spent more than usual, green means less. Tap ⌄ to see the shops.', q: '#t-last', alt: '#card-last' },
-    { t: 'New month', p: 'This little arrow starts a new month. Bills start again and paid spends clear.', q: '#t-tab' },
+    { t: 'New payday', p: 'This little arrow (or tapping your pay) opens New payday. Check pay and what was left, then Work it out.', q: '#t-tab' },
   ];
   const found = new Set(); let tipOn = false, curTip = null;
   function drawTipList() {
@@ -777,7 +808,8 @@ div.pot { position: relative; padding: 12px 0; border-bottom: 1px solid var(--bo
     switch (act) {
       case 'fold': S.open[a.dataset.k] = !S.open[a.dataset.k]; render(); break;
       case 'toast': toast(a.dataset.msg); break;
-      case 'payday': openPayday(); break;
+      case 'payday': S.npOpen = !S.npOpen; render(); if (S.npOpen) $('scroll').scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); break;
+      case 'npclear': { const i = a.closest('form').v; i.value = ''; i.focus(); break; }
       case 'mode': S.mode = a.dataset.v; render(); break;
       case 'sview': S.spendView = a.dataset.v; render(); break;
       case 'bview': S.billView = a.dataset.v; render(); break;
@@ -822,22 +854,22 @@ div.pot { position: relative; padding: 12px 0; border-bottom: 1px solid var(--bo
     if (kind === 'spend') { if (!(a > 0) || !n) return bad(f); S.spends.unshift({ id: ++S.nid, n, a, cat: guess(n), up: S.mode === 'up', when: '6 Nov 2024' }); render(); flashPart('#stcard'); }
     if (kind === 'pot') { if (!n || S.pots.some(p => p.n.toLowerCase() === n.toLowerCase())) return bad(f); S.pots.push({ n, a: a > 0 ? a : 0 }); if (!CATS.includes(n)) CATS.push(n); render(); }
     if (kind === 'card') cardAdd(1);
+    if (kind === 'newpay') { const left = f.v.value.trim() === '' ? 0 : num(f.v.value); if (!(a > 0) || !(left >= 0)) return bad(f); S.pay = a; S.npOpen = false; newMonth(left); toast('New month started'); }
     if (kind === 'bill') { if (!(a > 0) || !n) return bad(f); S.bills.push({ id: ++S.nid, n, d: null, cat: '', a, avg: a }); render(); toast(n + ' added. Tap + date to set its day'); }
     if (kind === 'bamount') { const x = num(v); if (!(x >= 0)) return bad(f); menuBill.a = x; closeMenu(); render(); toast('Amount saved'); }
     if (kind === 'bname') { if (!v) return bad(f); menuBill.n = v; closeMenu(); render(); }
   });
 
   // ---------- new month ----------
-  function newMonth() {
+  function newMonth(left) {
     const before = compute();
-    S.left = Math.max(Math.round(before.actual * 100) / 100, 0);
+    S.left = left ?? Math.max(Math.round(before.actual * 100) / 100, 0);
     S.spends = S.spends.filter(s => s.up); S.bills.forEach(b => b.paid = false);
     $('flashamt').textContent = '+ ' + fmt(S.pay);
     const fl = $('flash'); fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
     $('scroll').scrollTo({ top: 0 });
     setTimeout(render, reduce ? 0 : 800);
   }
-  function openPayday() { newMonth(); toast('New month started. Left over carried in'); }
 
   // ---------- scenarios ----------
   const SCN = [

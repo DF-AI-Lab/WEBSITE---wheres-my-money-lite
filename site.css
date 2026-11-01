@@ -48,3 +48,7 @@
 
 /* never make the page scroll sideways */
 body { overflow-x: clip; }
+
+/* no blue text highlight when tapping or dragging around the page; typing boxes still work */
+body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }

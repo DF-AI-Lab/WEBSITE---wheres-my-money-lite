@@ -20,5 +20,5 @@ This repo = the website that shows off the Lite app. The app itself lives in DF-
 - 1 Nov: Tour page 'Motion notes for Higgsfield / Remotion' section removed; text kept in MOTION_NOTES.md for later.
 - 1 Nov: no text highlight anywhere (site.css body user-select none; inputs still selectable).
 - 1 Nov: Tour New payday card (demo numbers: pay 2500.00, left 0.00, 28th, Work it out, Save a backup) OPENS on stop 3 (thumb print taps
-  the pay) and stays open on stop 4 'Or tap the little arrow' (t:'tab'); closed on every other stop. 11 stops.
+  the pay; its line + reticle point UP at the Pay box in the card) and stays open on stop 4 'Or tap the little arrow' (t:'tab'); closed on every other stop. 11 stops.
 - 1 Nov: Tour Autoplay REMOVED (Darren). Voice + Next work together: Next stops the old line and reads the new stop. Closed New payday card = 0 height (.c.newpay).

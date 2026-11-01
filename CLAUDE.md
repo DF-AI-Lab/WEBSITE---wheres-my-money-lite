@@ -17,3 +17,4 @@ This repo = the website that shows off the Lite app. The app itself lives in DF-
 - 1 Nov SIMPLE (Darren): ALL hands removed (no Hand.wrap, no float). Only the thumb print swiping the screen stays (Hand.print /
   Hand.follow). Higgsfield lab parked; amendments later.
 - 1 Nov: Wake page styles = Fingerprint + PIN only (thumb / tap / lift gone, no Wake it button). PIN = any 4 numbers (keypad or keyboard).
+- 1 Nov: Tour page 'Motion notes for Higgsfield / Remotion' section removed; text kept in MOTION_NOTES.md for later.

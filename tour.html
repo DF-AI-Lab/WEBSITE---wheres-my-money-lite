@@ -152,9 +152,6 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
 .gbox .opt { margin-top: 14px; font-size: 13px; color: var(--muted); display: flex; gap: 8px; justify-content: center; align-items: center; }
 .bootlog { font: 500 12px/1.7 var(--hudfont); color: var(--hud); letter-spacing: .1em; text-transform: uppercase; text-align: left; margin-top: 18px; min-height: 6.8em; }
 
-.notes { max-width: 1180px; margin: 0 auto; padding: 40px max(16px, env(safe-area-inset-right, 0px)) 60px max(16px, env(safe-area-inset-left, 0px)); color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
-.notes h2 { color: var(--text); font: 800 22px var(--body); margin: 0; }
-.notes ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 
 
 /* open cards inside the phone (the app is taller than the screen, so it scrolls) */
@@ -278,18 +275,6 @@ svg.hud { position: absolute; inset: 0; width: 100%; height: 100%; pointer-event
     <div class="bootlog" id="bootlog"></div>
   </div></div>
 </div>
-
-<section class="notes">
-  <h2>Motion notes for Higgsfield / Remotion</h2>
-  <ol>
-    <li>0–1.2s · Boot: grid fades in, rings spin up, "Standby → Online", scan line sweeps the screen top to bottom.</li>
-    <li>Each stop: everything dims to 28%, the part lights with a mint outline glow, a reticle locks on (0.5s delay).</li>
-    <li>Leader line draws from the panel corner to the part in 0.7s (stroke-dashoffset), elbow at 40% of the way.</li>
-    <li>Panel slides up 8px and fades; the line text types at ~28 characters a second with a block cursor.</li>
-    <li>Last stop: the lock screen fades over, press and hold the fingerprint for 0.8s, ring fills, "Welcome in".</li>
-    <li>For a video: film the real app at 9:16, keep the HUD lines as a code overlay so numbers stay sharp.</li>
-  </ol>
-</section>
 
 <script src="site.js"></script>
 <script>

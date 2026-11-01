@@ -34,27 +34,6 @@
 .nextch .small { color: var(--muted, #93a39d); font-size: 14px; }
 .nextch .small a { color: inherit; }
 
-/* ---------- the hand holding the phone ---------- */
-/* .inhand wraps .phone. The hand is two SVG layers: .hand-back sits behind the phone (palm, fingers), .hand-front on top (thumb, fingertips).
-   Both cover the same box: from 30% left of the phone to 40% right, from 37.5% down to 37.5% below it (viewBox -120 300 680 800, phone = 0..400 x 0..800). */
-.inhand { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; isolation: isolate; max-width: 100%; }
-.inhand > .phone { min-width: 0; }
-.inhand > .phone { z-index: 1; }
-.inhand .hand-back, .inhand .hand-front { position: absolute; left: -30%; width: 170%; top: 37.5%; height: 100%; pointer-events: none; overflow: visible; }
-.inhand .hand-back { z-index: 0; -webkit-mask-image: linear-gradient(#000 62%, transparent 92%); mask-image: linear-gradient(#000 62%, transparent 92%); }
-.inhand .hand-front { z-index: 2; -webkit-mask-image: linear-gradient(#000 62%, transparent 92%); mask-image: linear-gradient(#000 62%, transparent 92%); }
-.inhand .hand-front .hthumb { transform-box: view-box; transform-origin: 520px 880px; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
-.inhand.press .hand-front .hthumb { transform: rotate(-4deg) translate(-6px, 2px); }
-/* the gentle hover: the whole hand + phone floats */
-.inhand.float { animation: handfloat 6.5s ease-in-out infinite; }
-@keyframes handfloat {
-  0%, 100% { transform: translateY(0) rotate(-1.2deg); }
-  50% { transform: translateY(-12px) rotate(.6deg); }
-}
-.inhand .handshadow { position: absolute; z-index: -1; left: 10%; right: 0; bottom: -46%; height: 60px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.35), transparent); filter: blur(6px); pointer-events: none; }
-/* the wrapper needs the phone's width: the phone keeps its own width rule */
-.inhand > .phone { max-width: 100%; }
-
 /* ---------- thumb print on the glass ---------- */
 .tprint { position: absolute; z-index: 30; width: 60px; height: 78px; margin: -39px 0 0 -30px; border-radius: 50%; pointer-events: none; opacity: 0;
   background:
@@ -66,13 +45,6 @@
 :root[data-theme="light"] .tprint { filter: invert(1); }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .tprint.inv { filter: invert(1); } }
 
-@media (max-width: 520px) {
-  .inhand.float { animation-duration: 7.5s; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .inhand.float { animation: none; }
-  .inhand .hand-front .hthumb { transition: none; }
-}
 
-/* the hand can reach past the page edge: never make the page scroll sideways */
+/* never make the page scroll sideways */
 body { overflow-x: clip; }

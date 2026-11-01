@@ -206,18 +206,12 @@ section.chapters { border-top: 1px solid var(--border); padding-block: 56px 64px
 .chc p { margin: 0; color: var(--muted); font-size: 14px; }
 .chc i { font-style: normal; position: absolute; top: 18px; right: 20px; color: var(--muted); transition: transform .25s var(--ease), color .25s; }
 .chc:hover i { transform: translateX(4px); color: var(--accent); }
-/* the hand: hidden while the phone lies flat (lift style) and while the old thumb plays (thumb style) */
-.inhand svg.hand-back, .inhand svg.hand-front, .inhand .handshadow { transition: opacity .6s var(--ease); }
-.inhand:has(.phone.flat) svg.hand-back, .inhand:has(.phone.flat) svg.hand-front, .inhand:has(.phone.flat) .handshadow { opacity: 0; }
-.inhand.thumbing .hand-front .hthumb { opacity: 0; transition: opacity .3s; }
-.inhand .hand-front .hthumb { transition: opacity .4s .3s, transform .35s var(--ease); }
 .stage { padding-bottom: 40px; }
 @media (max-width: 960px) { .chgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) {
   .hl { min-height: 3.15em; }
   .chgrid { grid-template-columns: minmax(0, 1fr); }
-  .stage .inhand { width: 300px; max-width: 82%; translate: -14px 0; }
-  .stage .phone { width: 100%; }
+  .stage .phone { width: 300px; max-width: 86%; }
 }
 
 @media (max-width: 960px) {
@@ -361,7 +355,6 @@ section.chapters { border-top: 1px solid var(--border); padding-block: 56px 64px
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const page = $('page'), phone = $('phone'), screen = $('screen'), pad = $('pad');
   const C = 2 * Math.PI * 40;
-  const hand = window.Hand ? Hand.wrap(phone) : null;
 
   // storyboard: [start ms, end ms, name, what happens]. Times are from the moment the unlock is accepted.
   const BEATS = [
@@ -420,7 +413,7 @@ section.chapters { border-top: 1px solid var(--border); padding-block: 56px 64px
     pad.classList.remove('holding', 'done'); pad.classList.toggle('hide', style === 'tap' || style === 'lift');
     $('padhint').textContent = HINT[style];
     phone.classList.toggle('flat', style === 'lift');
-    $('thumb').classList.remove('go'); if (hand) hand.classList.remove('thumbing');
+    $('thumb').classList.remove('go');
     $('sub').textContent = SUB[style];
     $('play').hidden = style === 'finger' || style === 'tap';
     beatEls.forEach(b => b.classList.remove('now', 'done'));
@@ -496,7 +489,7 @@ section.chapters { border-top: 1px solid var(--border); padding-block: 56px 64px
   $('play').onclick = () => {
     if (state !== 'sleep') sleep();
     if (reduce) return woken();
-    if (style === 'thumb') { beatAt(0, true); if (hand) { hand.classList.add('thumbing'); setTimeout(() => hand.classList.remove('thumbing'), 2400); } const t = $('thumb'); t.classList.remove('go'); void t.offsetWidth; t.classList.add('go');
+    if (style === 'thumb') { beatAt(0, true); const t = $('thumb'); t.classList.remove('go'); void t.offsetWidth; t.classList.add('go');
       later(650, () => pad.classList.add('holding')); later(1550, () => { pad.classList.remove('holding'); wake(); }); }
     else if (style === 'lift') { phone.classList.remove('flat'); later(1000, () => wake(undefined, undefined)); }
     else wake();

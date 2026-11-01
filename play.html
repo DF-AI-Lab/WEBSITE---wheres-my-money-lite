@@ -367,14 +367,11 @@ div.pot { position: relative; padding: 12px 0; border-bottom: 1px solid var(--bo
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 @keyframes inrow { from { opacity: 0; transform: translateY(-6px); } }
 
-/* the hand + thumb */
+/* thumb print */
 @media (min-width: 1100px) { .layout { gap: 72px; } }
-.center .inhand { width: 392px; max-width: 100%; }
-.center .inhand > .phone { width: 100%; }
-.center { padding-bottom: 120px; }
+.center { padding-bottom: 40px; }
+@media (max-width: 520px) { .center .phone { width: 92%; } }
 .strows .dot { align-self: center; height: 8px; flex: none; }
-@media (max-width: 1099px) { .center { padding-bottom: 60px; } }
-@media (max-width: 520px) { .center .inhand { width: 86%; translate: -12px 0; } }
 
 /* bottom sheet tabs (narrow screens) */
 .sheettabs { display: none; }
@@ -859,11 +856,10 @@ div.pot { position: relative; padding: 12px 0; border-bottom: 1px solid var(--bo
     $('scn').querySelectorAll('.sc').forEach(b => b.onclick = () => runScn(+b.dataset.si));
   }
   // the thumb: scroll the phone with a thumb print pushing the glass
-  const handW = window.Hand ? Hand.wrap($('phone')) : null;
-  if (window.Hand) Hand.follow($('screen'), $('scroll'), handW);
+  if (window.Hand) Hand.follow($('screen'), $('scroll'));
   function thumbScroll(top) {
     const sc = $('scroll'), H = $('screen').clientHeight, dn = top > sc.scrollTop + 4, up = top < sc.scrollTop - 4;
-    if ((dn || up) && window.Hand && !reduce) { Hand.press(handW, true); setTimeout(() => Hand.press(handW, false), 700);
+    if ((dn || up) && window.Hand && !reduce) {
       Hand.print($('screen'), { y0: dn ? H * .78 : H * .3, y1: dn ? H * .32 : H * .76, dur: 900, dx: dn ? -12 : 10 }); }
     setTimeout(() => sc.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' }), reduce ? 0 : 120);
   }

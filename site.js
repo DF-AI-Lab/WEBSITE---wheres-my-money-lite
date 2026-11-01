@@ -1,4 +1,4 @@
-// Shared bits for every page: chapter nav, next-chapter band, the hand that holds the phone (Hand.wrap) and the thumb print (Hand.print / Hand.follow).
+// Shared bits for every page: chapter nav, next-chapter band, and the thumb print (Hand.print / Hand.follow).
 (() => {
   const APP = 'https://df-ai-lab.github.io/wheres-my-money-lite/';
   const DEMO = APP + 'demo/';
@@ -33,42 +33,6 @@
     document.body.append(band);
   }
 
-  // ---------- the hand ----------
-  let uid = 0;
-  function handSVG(layer, id) {
-    const skin = `<defs>
-      <linearGradient id="hs${id}" x1="0" x2="1" y1="0" y2=".3"><stop offset="0" stop-color="#eebf9b"/><stop offset=".55" stop-color="#d49a72"/><stop offset="1" stop-color="#ad7150"/></linearGradient>
-      <linearGradient id="hf${id}" x1="0" x2="1"><stop offset="0" stop-color="#b47755"/><stop offset=".6" stop-color="#dba57e"/><stop offset="1" stop-color="#e8b892"/></linearGradient>
-      <linearGradient id="ht${id}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f0c4a2"/><stop offset=".6" stop-color="#d69c74"/><stop offset="1" stop-color="#b37653"/></linearGradient>
-      <linearGradient id="hg${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f0c29f"/><stop offset=".55" stop-color="#d79d75"/><stop offset="1" stop-color="#a86d4c"/></linearGradient>
-      <radialGradient id="hn${id}" cx=".45" cy=".35" r=".7"><stop offset="0" stop-color="#fbe3d3"/><stop offset="1" stop-color="#e2b498"/></radialGradient></defs>`;
-    const fing = [[500, 70, -46], [568, 66, -50], [632, 62, -46], [692, 54, -38]];   // [top, height, left edge]
-    if (layer === 'back') return `<svg class="hand-back" viewBox="-120 300 680 800" preserveAspectRatio="none" aria-hidden="true">${skin}
-      <path d="M205 1100 C196 1010 132 944 62 902 C14 872 -14 812 -22 752 L-20 700 L400 690 C442 732 470 800 480 870 C488 950 494 1030 510 1100 Z" fill="url(#hs${id})"/>
-      <path d="M-14 770 C-2 840 30 880 80 910" stroke="#9c6446" stroke-width="2.5" fill="none" opacity=".35"/>
-      ${fing.map(([y, h, x]) => `<rect x="${x}" y="${y}" width="${60 - x}" height="${h}" rx="${h / 2}" fill="url(#hg${id})"/>
-        <path d="M${x + 16} ${y + h * .28} q-7 ${h * .22} 0 ${h * .44}" stroke="#94603f" stroke-width="2.2" fill="none" opacity=".4" stroke-linecap="round"/>`).join('')}
-      </svg>`;
-    return `<svg class="hand-front" viewBox="-120 300 680 800" preserveAspectRatio="none" aria-hidden="true">${skin}
-      ${fing.map(([y, h]) => `<ellipse cx="3" cy="${y + h / 2}" rx="7" ry="${h / 2 - 12}" fill="url(#hg${id})" opacity=".9"/>`).join('')}
-      <g class="hthumb"><g transform="translate(4 56)">
-        <path d="M472 910 C442 826 426 742 417 650 C411 600 409 560 413 530 C417 497 446 490 460 511 C472 529 478 580 482 630 C490 720 512 800 544 884 Z" fill="url(#ht${id})"/>
-        <ellipse cx="437" cy="532" rx="13" ry="21" transform="rotate(-6 437 532)" fill="url(#hn${id})" opacity=".9"/>
-        <path d="M426 604 q22 6 48 -2" stroke="#9c6446" stroke-width="2" fill="none" opacity=".4"/>
-      </g></g></svg>`;
-  }
-  function wrap(phone, opts = {}) {
-    if (!phone || phone.parentElement.classList.contains('inhand')) return phone && phone.parentElement;
-    const id = ++uid, w = document.createElement('div');
-    w.className = 'inhand' + (opts.float === false || reduce ? '' : ' float');
-    phone.before(w);
-    w.insertAdjacentHTML('beforeend', '<div class="handshadow"></div>' + handSVG('back', id));
-    w.append(phone);
-    w.insertAdjacentHTML('beforeend', handSVG('front', id));
-    return w;
-  }
-  function press(w, on) { if (w) w.classList.toggle('press', on); }
-
   // ---------- thumb print ----------
   // print(screen, {x, y0, y1, dur}): a thumb print lands at (x, y0), slides to (x, y1) and lifts off. Coordinates are px inside the screen.
   function print(screen, o = {}) {
@@ -89,7 +53,7 @@
     return a.finished.then(() => p.remove(), () => p.remove());
   }
   // follow(screen, scroller): a print shows under a dragging finger / mouse, and a short swipe shows on each wheel burst.
-  function follow(screen, scroller, w) {
+  function follow(screen, scroller) {
     if (!screen) return;
     let dragP = null, wheelT = 0;
     screen.addEventListener('pointerdown', e => {
@@ -110,11 +74,10 @@
     screen.addEventListener('wheel', e => {
       const now = performance.now(); if (now - wheelT < 650) return; wheelT = now;
       const r = screen.getBoundingClientRect(), y = e.clientY - r.top, dn = e.deltaY > 0;
-      press(w, true); setTimeout(() => press(w, false), 500);
       print(screen, { x: e.clientX - r.left, y0: y + (dn ? 70 : -70), y1: y + (dn ? -70 : 70), dur: 650 });
     }, { passive: true });
   }
 
-  window.Hand = { wrap, print, follow, press };
+  window.Hand = { print, follow };
   window.SITE = { APP, DEMO };
 })();
